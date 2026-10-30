@@ -17,14 +17,18 @@ const myName = () => (store.get("prenom") || "").trim().slice(0, 30);
 const sameName = (a, b) => String(a || "").trim().toLowerCase() === String(b || "").trim().toLowerCase();
 const isMe = n => !!n && sameName(n, myName());
 
-// La clé arrive dans le lien de partage (#k=…), jamais envoyée au serveur de la page.
-// On la garde sur le téléphone et elle reste dans la barre d'adresse : « Ouvrir dans le navigateur »
-// depuis Instagram ou WhatsApp ne transmet que l'adresse affichée.
+// La clé arrive dans le lien de partage (#k=… ou ?k=…) et reste dans l'adresse en ?k=… :
+// « Ouvrir dans le navigateur » depuis Instagram ou WhatsApp ne transmet que l'adresse affichée,
+// et certains de ces navigateurs perdent la partie après #. On la garde aussi sur le téléphone.
 const KEY = (() => {
-  const m = location.hash.match(/k=([\w-]{8,64})/);
-  const key = m ? m[1] : store.get("cle") || "";
-  if (m) store.set("cle", key);
-  else if (key) history.replaceState(null, "", location.pathname + location.search + "#k=" + key);
+  const valid = k => (/^[\w-]{8,64}$/.test(k || "") ? k : "");
+  const fromHash = (location.hash.match(/k=([\w-]{8,64})/) || [])[1];
+  const fromQuery = valid(new URLSearchParams(location.search).get("k"));
+  const key = fromHash || fromQuery || store.get("cle") || "";
+  if (!key) return "";
+  store.set("cle", key);
+  const url = location.pathname + "?k=" + key;
+  if (location.pathname + location.search + location.hash !== url) history.replaceState(null, "", url);
   return key;
 })();
 
