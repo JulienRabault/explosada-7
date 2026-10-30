@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Explosada 7.0</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Explosada">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Cg fill='%23df9a4e'%3E%3Crect x='3' y='1' width='2' height='1'/%3E%3Crect x='2' y='2' width='4' height='1'/%3E%3Crect x='1' y='3' width='6' height='2'/%3E%3Crect x='2' y='5' width='4' height='1'/%3E%3Crect x='3' y='6' width='2' height='1'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="config.js"></script>
+</head>
+<body>
+<section class="lock" id="lock" hidden>
+  <h1>Explosada 7.0</h1>
+  <p>Cette page s'ouvre avec le lien de partage. Rouvre le lien reçu dans le groupe, ou demande-le à l'orga.</p>
+</section>
+
+<main class="app" id="app">
+  <header class="top">
+    <div class="title-row">
+      <canvas class="orb" id="orb" width="24" height="24" aria-hidden="true"></canvas>
+      <h1>Explosada 7.0</h1>
+      <button type="button" class="avatar" id="who-btn" aria-label="Changer de prénom"></button>
+    </div>
+    <p class="subtitle">On cherche la maison · 31 déc. → 3 janv. · <span id="countdown"></span></p>
+  </header>
+
+  <section class="group people" aria-label="Nombre de personnes">
+    <div>
+      <p class="people-n"><output id="nb">35</output> personnes</p>
+      <p class="people-cap" id="cap"></p>
+    </div>
+    <div class="stepper">
+      <button type="button" id="less" aria-label="Une personne de moins">−</button>
+      <button type="button" id="more" aria-label="Une personne de plus">+</button>
+    </div>
+  </section>
+
+  <div class="seg-bar"><div class="seg" id="tabs" role="group" aria-label="Lieux"></div></div>
+
+  <div class="list-head">
+    <p id="note"></p>
+    <label class="sort">
+      <span class="sr">Trier par</span>
+      <select id="sort">
+        <option value="prio">Conseillés</option>
+        <option value="prix">Moins chers</option>
+        <option value="avis">Mieux notés</option>
+      </select>
+    </label>
+  </div>
+  <ul class="group list" id="list"><li class="empty">Chargement des lieux…</li></ul>
+
+  <div class="group"><button type="button" class="add-row" id="add">Ajouter un lieu</button></div>
+
+  <footer class="foot">
+    <div class="group" id="sheet-group" hidden><a class="link-row" id="sheet-link" target="_blank" rel="noopener">Ouvrir le tableau Google</a></div>
+    <p id="mode"></p>
+    <p>Laissés de côté, trop chers : Château Lacoste (11 183 €), Domaine de Sourbil (8 854 €), Château Arize (8 544 €), Domaine 37 pers. de Saint-Élix (8 100 €).</p>
+    <p>Prix relevés en ligne le 29/10/2026 pour les 3 nuits, avant négociation.</p>
+  </footer>
+</main>
+
+<dialog class="sheet" id="place" aria-label="Fiche du lieu"></dialog>
+
+<dialog class="sheet compact" id="who" aria-labelledby="who-title">
+  <form method="dialog" id="whoform">
+    <div class="nav">
+      <span></span>
+      <h2 id="who-title">C'est qui ?</h2>
+      <button type="submit" class="nav-btn strong">OK</button>
+    </div>
+    <div class="sheet-body">
+      <div class="group"><input class="solo" id="whoname" type="text" maxlength="30" autocomplete="given-name" placeholder="Tom" aria-label="Ton prénom" required></div>
+      <p class="sec-f">Ton prénom s'affiche quand tu prends un lieu ou que tu le notes.</p>
+    </div>
+  </form>
+</dialog>
+
+<dialog class="sheet" id="dlg" aria-labelledby="add-title">
+  <form method="dialog" id="addform" novalidate>
+    <div class="nav">
+      <button type="button" class="nav-btn" id="cancel">Annuler</button>
+      <h2 id="add-title">Nouveau lieu</h2>
+      <button type="submit" class="nav-btn strong" id="addok">Ajouter</button>
+    </div>
+    <div class="sheet-body">
+      <div class="group">
+        <label class="field"><span>Nom</span><input name="nom" maxlength="80" placeholder="Château de…"></label>
+        <label class="field"><span>Annonce</span><input name="lien" type="url" inputmode="url" placeholder="https://…"></label>
+        <label class="field"><span>Photo</span><input name="photo" type="url" inputmode="url" placeholder="lien de l'image"></label>
+      </div>
+      <div class="group">
+        <label class="field"><span>Prix 3 nuits</span><input name="prix" type="number" min="0" step="50" inputmode="numeric" placeholder="€"></label>
+        <label class="field"><span>Couchages</span><input name="couchages" maxlength="60" placeholder="36"></label>
+        <label class="field"><span>Téléphone</span><input name="tel" type="tel" maxlength="40" placeholder="05…"></label>
+      </div>
+      <div class="group">
+        <label class="field toggle"><span>Libre en ligne<small>Pas besoin d'appeler</small></span><input name="enligne" type="checkbox" role="switch"></label>
+      </div>
+      <p class="msg" id="addmsg" role="alert"></p>
+    </div>
+  </form>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="app.js"></script>
+</body>
+</html>
