@@ -6,27 +6,26 @@
 <title>Explosada 7.0</title>
 <meta name="robots" content="noindex, nofollow">
 <meta name="referrer" content="no-referrer">
-<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
-<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
-<meta name="apple-mobile-web-app-capable" content="yes">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' https: data:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'self'; object-src 'none'">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#f2f2f7">
 <meta name="apple-mobile-web-app-title" content="Explosada">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Cg fill='%23df9a4e'%3E%3Crect x='3' y='1' width='2' height='1'/%3E%3Crect x='2' y='2' width='4' height='1'/%3E%3Crect x='1' y='3' width='6' height='2'/%3E%3Crect x='2' y='5' width='4' height='1'/%3E%3Crect x='3' y='6' width='2' height='1'/%3E%3C/g%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' shape-rendering='crispEdges'%3E%3Cdefs%3E%3ClinearGradient id='c' x2='0' y2='1'%3E%3Cstop offset='0' stop-color='%23141b38'/%3E%3Cstop offset='1' stop-color='%232b3a6b'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='24' height='24' rx='5.5' fill='url(%23c)'/%3E%3Cpath fill='%23090b15' d='M11 8h2v1h1v1h1V8h2v4h1v1h1v2h-2v5h7v4H0v-4h7v-5H5v-2h1v-1h1v-1h1v-1h1v-1h1V9h1z'/%3E%3Cpath fill='%23f59e0b' d='M8 15h2v2H8zM14 15h2v2h-2z'/%3E%3Cpath fill='%23fcd34d' d='M5 3h1v1H5zM18 2h1v1h-1zM4 5h1v1H4zM6 5h1v1H6zM17 4h1v1h-1zM19 4h1v1h-1z'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
-<script src="config.js"></script>
 </head>
 <body>
 <section class="lock" id="lock" hidden>
   <h1>Explosada 7.0</h1>
-  <p>Cette page s'ouvre avec le lien de partage. Rouvre le lien reçu dans le groupe, ou demande-le à l'orga.</p>
+  <p id="lock-text">Cette page s'ouvre avec le lien de partage. Rouvre le lien reçu dans le groupe, ou demande-le à l'orga.</p>
 </section>
 
 <main class="app" id="app">
   <header class="top">
     <div class="title-row">
-      <canvas class="orb" id="orb" width="24" height="24" aria-hidden="true"></canvas>
+      <canvas class="house" id="house" width="24" height="24" aria-hidden="true"></canvas>
       <h1>Explosada 7.0</h1>
       <button type="button" class="avatar" id="who-btn" aria-label="Changer de prénom"></button>
     </div>
@@ -47,42 +46,57 @@
   <div class="seg-bar"><div class="seg" id="tabs" role="group" aria-label="Lieux"></div></div>
 
   <div class="list-head">
-    <p id="note"></p>
-    <label class="sort">
-      <span class="sr">Trier par</span>
-      <select id="sort">
-        <option value="prio">Conseillés</option>
-        <option value="prix">Moins chers</option>
-        <option value="avis">Mieux notés</option>
-      </select>
-    </label>
+    <h2 class="list-count" id="count"></h2>
+    <div class="sort">
+      <button type="button" class="sort-btn" id="sort-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="sort-menu"></button>
+      <div class="menu" id="sort-menu" role="menu" aria-label="Trier" hidden></div>
+    </div>
   </div>
   <ul class="group list" id="list"><li class="empty">Chargement des lieux…</li></ul>
+  <p class="list-foot" id="note"></p>
 
   <div class="group"><button type="button" class="add-row" id="add">Ajouter un lieu</button></div>
+
+  <section class="sec" id="activity" hidden>
+    <h2 class="sec-h">Dernières actions</h2>
+    <div class="group" id="activity-list"></div>
+  </section>
 
   <footer class="foot">
     <div class="group" id="sheet-group" hidden><a class="link-row" id="sheet-link" target="_blank" rel="noopener">Ouvrir le tableau Google</a></div>
     <p id="mode"></p>
     <p>Laissés de côté, trop chers : Château Lacoste (11 183 €), Domaine de Sourbil (8 854 €), Château Arize (8 544 €), Domaine 37 pers. de Saint-Élix (8 100 €).</p>
-    <p>Prix relevés en ligne le 29/10/2026 pour les 3 nuits, avant négociation.</p>
+    <p>Prix relevés en ligne le 29/10/2026 pour les 3 nuits, avant négociation. Annonces relues le 30/10 : dispo, couchages, cuisine, fête, chauffage.</p>
   </footer>
 </main>
 
 <dialog class="sheet" id="place" aria-label="Fiche du lieu"></dialog>
 
 <dialog class="sheet compact" id="who" aria-labelledby="who-title">
-  <form method="dialog" id="whoform">
+  <form method="dialog" id="whoform" novalidate>
     <div class="nav">
       <span></span>
-      <h2 id="who-title">C'est qui ?</h2>
+      <h2 id="who-title">Bienvenue</h2>
       <button type="submit" class="nav-btn strong">OK</button>
     </div>
     <div class="sheet-body">
-      <div class="group"><input class="solo" id="whoname" type="text" maxlength="30" autocomplete="given-name" placeholder="Tom" aria-label="Ton prénom" required></div>
-      <p class="sec-f">Ton prénom s'affiche quand tu prends un lieu ou que tu le notes.</p>
+      <p class="who-lead">C'est qui ? Ton prénom s'affiche à côté de ce que tu fais, pour que tout le monde sache qui appelle quel lieu.</p>
+      <div class="group"><input class="solo" id="whoname" type="text" maxlength="30" autocomplete="given-name" autocapitalize="words" enterkeyhint="done" placeholder="Tom" aria-label="Ton prénom"></div>
+      <p class="msg" id="whomsg" role="alert"></p>
+      <p class="sec-f" id="who-list"></p>
     </div>
   </form>
+</dialog>
+
+<dialog class="alert" id="ask" aria-labelledby="ask-title" aria-describedby="ask-text">
+  <div class="alert-body">
+    <h2 id="ask-title"></h2>
+    <p id="ask-text"></p>
+  </div>
+  <div class="alert-btns">
+    <button type="button" id="ask-no" class="strong"></button>
+    <button type="button" id="ask-yes"></button>
+  </div>
 </dialog>
 
 <dialog class="sheet" id="dlg" aria-labelledby="add-title">
@@ -112,6 +126,9 @@
 </dialog>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="config.js"></script>
+<script src="data.js"></script>
+<script src="house.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

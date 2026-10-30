@@ -16,3 +16,23 @@ Sans la clé, la Sheet refuse toute lecture et toute écriture.
 5. Copier l'adresse `/exec` dans `config.js` (`API_URL`).
 
 Lien qui a fuité : exécuter `changerLienDePartage`, puis repartager le nouveau lien.
+Couper l'accès à tout le monde d'un coup : `fermerLaPage` (et `rouvrirLaPage`).
+
+## Mettre à jour le script
+
+Coller le nouveau `Code.gs`, enregistrer, puis Déployer > Gérer les déploiements >
+crayon > Version : Nouvelle version > Déployer. L'adresse `/exec` et la clé ne changent pas.
+
+## Ce que la Sheet garde
+
+- Lieux : statut, qui s'en occupe et depuis quand (`Pris le`).
+- Journal : chaque geste daté, avec le prénom (appelle, prend le lieu, statut, prix, note…).
+- Personnes : première et dernière visite de chacun.
+- Deux personnes qui touchent « Appeler » en même temps : la Sheet donne le lieu à la première,
+  la seconde est prévenue et peut renoncer ou appeler quand même (noté « appelle aussi »).
+
+## Fichiers
+
+`config.js` (adresses), `data.js` (lecture et écriture, mode essai local), `house.js` (la maison
+pixel), `app.js` (l'interface), `seed.json` (les 37 lieux de départ), `verif.json` (la relecture des
+annonces du 30/10, affichée dans chaque fiche ; fichier fixe, la Sheet n'y touche pas).

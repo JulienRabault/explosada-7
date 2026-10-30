@@ -1,91 +1,36 @@
 "use strict";
 
 /* ---------- réglages ---------- */
-const API = (window.API_URL || "").trim();
-const SHEET = (window.SHEET_URL || "").trim();
 const STATUTS = ["À appeler", "Pas de réponse", "Dispo", "Option posée", "Réservé", "Abandonné"];
 const EN_COURS = ["Pas de réponse", "Dispo", "Option posée", "Réservé"];
 const TONE = { "Pas de réponse": "gray", "Dispo": "green", "Option posée": "orange", "Réservé": "blue", "Abandonné": "red" };
 // réponses proposées juste après un appel : [statut enregistré, libellé du bouton]
 const RESULTS = [["Dispo", "C'est dispo"], ["Abandonné", "Pas dispo"], ["Pas de réponse", "Pas de réponse"], ["Option posée", "Option posée"]];
 const ASK = [
-  "Libre du jeudi 31/12 au dimanche 03/01 ?",
-  "Prix total pour tout le groupe, ménage compris ?",
-  "On peut faire une vraie soirée ? Musique jusqu'à quelle heure ?",
-  "Le lieu est rien que pour nous ?",
-  "Caution et acompte ?",
+  "Libre du jeudi 31/12 au dimanche 03/01, les 3 nuits ?",
+  "Prix exact pour 35, tout compris : ménage, draps, taxe de séjour, chauffage ?",
+  "Le propriétaire ou des voisins vivent sur place ou juste à côté ?",
+  "On peut mettre des enceintes et faire la fête tard ? Jusqu'à quelle heure ?",
+  "La cuisine suffit pour 35 : frigos, feux, four, vaisselle ?",
+  "Rien que pour nous ? Caution et acompte ?",
 ];
 const TABS = [
-  { key: "call", label: "À appeler", note: "pas de calendrier en ligne, il faut appeler" },
-  { key: "doing", label: "En cours", note: "quelqu'un a déjà appelé" },
-  { key: "online", label: "En ligne", note: "libres en ligne le 29/10, pas besoin d'appeler" },
-  { key: "out", label: "Écartés", note: "pas dispo, trop cher ou fête refusée" },
+  { key: "call", label: "À appeler", note: "Pas de calendrier en ligne : il faut appeler pour savoir si c'est libre." },
+  { key: "doing", label: "En cours", note: "Quelqu'un a déjà appelé. Touche un lieu pour voir où on en est." },
+  { key: "online", label: "En ligne", note: "Affichés libres en ligne le 29/10. Le calendrier peut bouger d'ici la réservation." },
+  { key: "out", label: "Écartés", note: "Pas dispo, trop cher ou fête refusée." },
+];
+const SORTS = [
+  { key: "prio", label: "Conseillés", hint: "nos préférés d'abord" },
+  { key: "prix", label: "Moins chers", hint: "prix par personne" },
+  { key: "avis", label: "Mieux notés", hint: "par les copains" },
 ];
 const MIDNIGHT = Date.parse("2027-01-01T00:00:00+01:00");
 
 /* ---------- état ---------- */
-let data = { lieux: [], avis: [], nb: 35 };
+let data = VIDE();
 let tab = "call", sort = "prio", openId = null, afterCall = null, loaded = false;
-
-// préfixe : toutes les pages julienrabault.github.io partagent le même stockage
-const store = {
-  get(k) { try { return localStorage.getItem("explosada-" + k); } catch (e) { return null; } },
-  set(k, v) { try { localStorage.setItem("explosada-" + k, v); } catch (e) { /* stockage indisponible : on continue sans */ } },
-};
-
-// La clé arrive dans le lien de partage (#k=…), jamais envoyée au serveur de la page.
-// On la garde sur le téléphone et on l'enlève de la barre d'adresse.
-const KEY = (() => {
-  const m = location.hash.match(/k=([\w-]{8,64})/);
-  if (!m) return store.get("cle") || "";
-  store.set("cle", m[1]);
-  history.replaceState(null, "", location.pathname + location.search);
-  return m[1];
-})();
-
-/* ---------- accès aux données (Google Sheet, ou essai local) ---------- */
-// un réseau qui ne répond pas ne doit pas bloquer la file d'envoi
-async function fetch20(url, opts = {}) {
-  const ctl = new AbortController();
-  const timer = setTimeout(() => ctl.abort(), 20000);
-  try { return await fetch(url, { ...opts, signal: ctl.signal }); } finally { clearTimeout(timer); }
-}
-const remote = {
-  async get() {
-    const r = await fetch20(API + (API.includes("?") ? "&" : "?") + "k=" + encodeURIComponent(KEY) + "&t=" + Date.now(), { cache: "no-store" });
-    return check(await r.json());
-  },
-  async post(req) {
-    // text/plain : pas de requête préalable CORS, Apps Script lit le corps tel quel
-    const r = await fetch20(API, { method: "POST", body: JSON.stringify({ ...req, k: KEY }) });
-    return check(await r.json());
-  },
-};
-function check(res) {
-  if (!res || res.error) throw new Error((res && res.error) || "Réponse vide");
-  return res;
-}
-
-const local = {
-  read() { try { return JSON.parse(store.get("local")) || { lieux: [], avis: [], nb: 35 }; } catch (e) { return { lieux: [], avis: [], nb: 35 }; } },
-  async get() { return this.read(); },
-  async post(req) {
-    const d = this.read();
-    const now = Date.now();
-    if (req.action === "seed" && !d.lieux.length) d.lieux = req.lieux.map(l => ({ ...l, statut: "À appeler", qui: "", prixNego: "", commentaire: "", maj: now }));
-    if (req.action === "maj") d.lieux = d.lieux.map(l => l.id === req.id ? { ...l, ...pick(req, ["statut", "qui", "prixNego", "commentaire"]), maj: now } : l);
-    if (req.action === "ajout") d.lieux = [...d.lieux, { ...pick(req, ["nom", "lien", "prix", "couchages", "tel", "photo", "qui"]), id: "u" + now.toString(36), statut: "À appeler", aAppeler: req.aAppeler === false ? "non" : "oui", prio: 2, maj: now }];
-    if (req.action === "avis") {
-      const rest = d.avis.filter(a => !(a.id === req.id && a.prenom.toLowerCase() === req.prenom.toLowerCase()));
-      d.avis = req.note > 0 ? [...rest, { id: req.id, prenom: req.prenom, note: req.note }] : rest;
-    }
-    if (req.action === "nb") d.nb = req.nb;
-    store.set("local", JSON.stringify(d));
-    return d;
-  },
-};
-const db = API ? remote : local;
-const pick = (o, keys) => Object.fromEntries(keys.filter(k => k in o).map(k => [k, o[k]]));
+let verif = { date: "", lieux: {} }; // la vérification des annonces, fichier fixe verif.json
 
 /* ---------- petits outils ---------- */
 const $ = id => document.getElementById(id);
@@ -132,15 +77,14 @@ const telHref = t => {
   if (d.startsWith("00")) return "tel:+" + d.slice(2);
   return "tel:" + (d.startsWith("0") ? "+33" + d.slice(1) : d);
 };
-const safeUrl = u => /^https?:\/\//i.test(u || "") || /^img\/[\w.-]+$/.test(u || "") ? u : null;
-const myName = () => (store.get("prenom") || "").trim().slice(0, 30);
-const isMe = n => !!n && n.toLowerCase() === myName().toLowerCase();
+const safeUrl = u => /^https:\/\//i.test(u || "") || /^img\/[\w.-]+$/.test(u || "") ? u : null;
 const phones = l => String(l.tel || "").split("/").map(t => t.trim()).filter(Boolean);
 const shortBeds = l => String(l.couchages || "").replace(/\s*\(.*?\)/g, "").trim();
 const toneOf = pp => pp <= 150 ? "green" : pp <= 200 ? "orange" : "red";
 const typing = () => { const a = document.activeElement; return !!a && $("place").contains(a) && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName); };
+const findPlace = id => data.lieux.find(x => x.id === id);
 
-// gardé en mémoire : le message peut vivre dans la fiche, qui est reconstruite à chaque mise à jour
+// gardé en mémoire : le message peut vivre dans une feuille, reconstruite à chaque mise à jour
 let toastTimer, toastEl;
 function toast(t) {
   const el = toastEl || (toastEl = $("toast"));
@@ -150,12 +94,12 @@ function toast(t) {
   el.textContent = t;
   el.classList.add("show");
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => el.classList.remove("show"), 2600);
+  toastTimer = setTimeout(() => el.classList.remove("show"), 2800);
 }
 
 function ago(v) {
   const t = typeof v === "number" ? v : Date.parse(v);
-  if (!Number.isFinite(t)) return "";
+  if (!Number.isFinite(t) || !t) return "";
   const m = Math.round((Date.now() - t) / 6e4);
   if (m < 1) return "à l'instant";
   if (m < 60) return `il y a ${m} min`;
@@ -163,7 +107,25 @@ function ago(v) {
   return "le " + new Date(t).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 }
 
-/* ---------- prénom : demandé une seule fois, au premier geste qui en a besoin ---------- */
+/* ---------- boîte de confirmation façon iOS ---------- */
+// onYes s'exécute dans le geste même (un appel téléphonique doit partir du tap)
+function askBox(title, text, yes, no, onYes) {
+  const dlg = $("ask");
+  $("ask-title").textContent = title;
+  $("ask-text").textContent = text;
+  $("ask-yes").textContent = yes;
+  $("ask-no").textContent = no;
+  dlg.showModal();
+  $("ask-no").focus();
+  return new Promise(resolve => {
+    const done = ok => () => { dlg.close(); if (ok && onYes) onYes(); resolve(ok); };
+    $("ask-yes").onclick = done(true);
+    $("ask-no").onclick = done(false);
+    dlg.oncancel = ev => { ev.preventDefault(); done(false)(); };
+  });
+}
+
+/* ---------- prénom : obligatoire dès l'arrivée ---------- */
 let afterName = null;
 function withName(fn) {
   const n = myName();
@@ -172,30 +134,55 @@ function withName(fn) {
   openWho();
 }
 function openWho() {
+  const others = data.personnes.filter(p => !isMe(p));
+  $("who-list").textContent = others.length ? "Déjà là : " + others.join(", ") + "." : "";
+  $("whomsg").textContent = "";
   $("whoname").value = myName();
+  $("who-title").textContent = myName() ? "Changer de prénom" : "Bienvenue";
   $("who").showModal();
   $("whoname").focus();
 }
 function setupWho() {
   $("who-btn").addEventListener("click", () => { afterName = null; openWho(); });
+  // sans prénom, on ne peut pas fermer la fenêtre
+  $("who").addEventListener("cancel", ev => { if (!myName()) ev.preventDefault(); });
+  // Chrome ferme quand même au second Échap : on rouvre tant qu'il manque le prénom
+  $("who").addEventListener("close", () => { if (!myName() && !locked) setTimeout(openWho); });
   $("whoform").addEventListener("submit", ev => {
     ev.preventDefault();
-    const n = $("whoname").value.trim().slice(0, 30);
-    if (!n) return $("whoname").focus();
-    store.set("prenom", n);
-    $("who").close();
-    renderWho();
-    refresh();
-    const next = afterName;
-    afterName = null;
-    if (next) next(n);
+    const n = $("whoname").value.trim().replace(/\s+/g, " ");
+    if (!PRENOM.test(n)) {
+      $("whomsg").textContent = "Juste ton prénom, en lettres (30 au plus).";
+      return $("whoname").focus();
+    }
+    if (sameName(n, myName())) return acceptName(n);
+    // deux copains du même prénom seraient confondus : on le signale avant
+    if (data.personnes.some(p => sameName(p, n))) {
+      return askBox(`Il y a déjà un ${n}`,
+        `Si c'est toi sur un autre téléphone, continue. Sinon, ajoute l'initiale de ton nom (${n} B.) pour qu'on ne vous mélange pas.`,
+        "C'est moi", "Changer", () => acceptName(n)).then(ok => { if (!ok) $("whoname").focus(); });
+    }
+    acceptName(n);
   });
+}
+function acceptName(n) {
+  const changed = !sameName(n, myName());
+  store.set("prenom", n);
+  $("who").close();
+  renderWho();
+  refresh();
+  if (changed) sayHello();
+  const next = afterName;
+  afterName = null;
+  if (next) next(n);
 }
 function renderWho() {
   const n = myName();
   $("who-btn").replaceChildren(n ? n[0].toUpperCase() : icon(ICON.person, 18));
   $("who-btn").setAttribute("aria-label", n ? `Tu es ${n}. Changer de prénom` : "Dire qui tu es");
 }
+// note la visite (première et dernière) dans l'onglet Personnes
+function sayHello() { if (myName()) send({ action: "bonjour" }); }
 
 /* ---------- lecture des lieux ---------- */
 const statutOf = l => (l.statut && l.statut !== "À appeler" ? l.statut : null);
@@ -220,6 +207,7 @@ function sorted(list) {
   return [...list].sort(by);
 }
 const pill = st => h("span", { class: "pill " + TONE[st] }, st);
+const whoText = l => isMe(l.qui) ? "Toi" : l.qui;
 
 /* ---------- liste ---------- */
 function thumb(l) {
@@ -234,9 +222,11 @@ function row(l) {
   const { list, avg } = notes(l.id);
   const st = statutOf(l), t = total(l), pp = t / data.nb, tels = phones(l);
   const beds = shortBeds(l);
+  const since = l.qui && l.depuis ? " · " + ago(l.depuis) : "";
   const foot = st
-    ? [pill(st), l.qui ? h("span", { class: "who" }, isMe(l.qui) ? "toi" : l.qui) : null]
-    : l.qui ? [h("span", { class: "who tint" }, (isMe(l.qui) ? "Tu t'en occupes" : l.qui + " s'en occupe"))] : null;
+    ? [pill(st), l.qui ? h("span", { class: "who" }, whoText(l)) : null]
+    : l.qui ? [h("span", { class: "who tint" }, (isMe(l.qui) ? "Tu t'en occupes" : l.qui + " s'en occupe") + since)]
+    : checkTag(l);
   return h("li", { class: "row" },
     h("button", { class: "row-main", type: "button", onclick: () => openPlace(l.id) },
       thumb(l),
@@ -249,8 +239,15 @@ function row(l) {
       list.length ? h("span", { class: "row-avg", "aria-label": `Moyenne ${virgule(avg)} sur 5` }, icon(ICON.star, 13), virgule(avg)) : null,
       h("span", { class: "chev" }, icon(ICON.chevron, 16))),
     tab === "call" && tels.length
-      ? h("button", { class: "row-call", type: "button", "aria-label": "Appeler " + l.nom, onclick: () => call(l, tels[0]) }, icon(ICON.phone, 18))
+      ? h("button", { class: "row-call" + (l.qui && !isMe(l.qui) ? " taken" : ""), type: "button", "aria-label": "Appeler " + l.nom, onclick: () => call(l, tels[0]) }, icon(ICON.phone, 20))
       : null);
+}
+
+function logLine(e, withPlace) {
+  const nom = withPlace && e.id ? (findPlace(e.id) || {}).nom : "";
+  return h("div", { class: "cell log" },
+    h("span", { class: "log-text" }, h("b", {}, e.par), " ", e.quoi, nom ? h("span", { class: "log-place" }, " · " + nom) : null),
+    h("span", { class: "log-time" }, ago(e.t)));
 }
 
 function renderList() {
@@ -265,8 +262,45 @@ function renderList() {
   }, t.label)));
   const shown = sorted(data.lieux.filter(l => bucket(l) === tab));
   const n = shown.length;
-  $("note").textContent = loaded ? `${n} ${n > 1 ? "lieux" : "lieu"}, ${TABS.find(t => t.key === tab).note}` : "";
+  $("count").textContent = loaded ? `${n} ${n > 1 ? "lieux" : "lieu"}` : "";
+  $("note").textContent = loaded && n ? TABS.find(t => t.key === tab).note : "";
+  renderSort();
   $("list").replaceChildren(...(n ? shown.map(row) : [h("li", { class: "empty" }, loaded ? "Rien ici pour l'instant." : "Chargement des lieux…")]));
+  const recent = data.journal.slice(-6).reverse();
+  $("activity").hidden = !recent.length;
+  $("activity-list").replaceChildren(...recent.map(e => logLine(e, true)));
+}
+
+/* ---------- menu de tri ---------- */
+function renderSort() {
+  $("sort-btn").replaceChildren(SORTS.find(s => s.key === sort).label, icon(ICON.updown, 13));
+  $("sort-btn").setAttribute("aria-label", "Trier : " + SORTS.find(s => s.key === sort).label);
+}
+function toggleSort(open) {
+  const menu = $("sort-menu");
+  open = open === undefined ? menu.hidden : open;
+  if (open) {
+    menu.replaceChildren(...SORTS.map(s => h("button", {
+      class: "menu-item", type: "button", role: "menuitemradio", "aria-checked": String(s.key === sort),
+      onclick: () => { sort = s.key; toggleSort(false); renderList(); $("sort-btn").focus(); },
+    }, h("span", { class: "check" }, icon(ICON.check, 18)), h("span", {}, s.label, h("small", {}, s.hint)))));
+  }
+  menu.hidden = !open;
+  $("sort-btn").setAttribute("aria-expanded", String(open));
+  if (open) menu.querySelector("[aria-checked=true]").focus();
+}
+function setupSort() {
+  $("sort-btn").addEventListener("click", ev => { ev.stopPropagation(); toggleSort(); });
+  document.addEventListener("click", ev => { if (!$("sort-menu").hidden && !$("sort-menu").contains(ev.target)) toggleSort(false); });
+  document.addEventListener("keydown", ev => {
+    if ($("sort-menu").hidden) return;
+    if (ev.key === "Escape") { toggleSort(false); $("sort-btn").focus(); }
+    if (ev.key === "ArrowDown" || ev.key === "ArrowUp") {
+      ev.preventDefault();
+      const items = [...$("sort-menu").children], i = items.indexOf(document.activeElement);
+      items[(i + (ev.key === "ArrowDown" ? 1 : items.length - 1)) % items.length].focus();
+    }
+  });
 }
 
 function refresh() {
@@ -300,8 +334,13 @@ function actions(l) {
   const tels = phones(l), href = safeUrl(l.lien);
   const canCall = l.aAppeler !== "non" && tels.length;
   return h("div", { class: "actions" },
-    canCall ? h("button", { class: "act primary", type: "button", onclick: () => call(l, tels[0]) }, icon(ICON.phone, 20), "Appeler") : null,
-    href ? h("a", { class: "act" + (canCall ? "" : " primary"), href, target: "_blank", rel: "noopener noreferrer" }, icon(ICON.out, 20), host(href)) : null);
+    canCall ? h("button", { class: "act primary", type: "button", onclick: () => call(l, tels[0]) }, icon(ICON.phone, 22), "Appeler") : null,
+    href ? h("a", { class: "act" + (canCall ? "" : " primary"), href, target: "_blank", rel: "noopener noreferrer" }, icon(ICON.out, 22), host(href)) : null);
+}
+
+function busyNote(l) {
+  if (!l.qui || isMe(l.qui)) return null;
+  return h("p", { class: "busy" }, h("b", {}, l.qui), " s'en occupe" + (l.depuis ? " depuis " + ago(l.depuis).replace(/^il y a /, "") : "") + ". Vois avec ", l.qui, " avant d'appeler.");
 }
 
 function resultPrompt(l) {
@@ -312,6 +351,24 @@ function resultPrompt(l) {
       onclick: () => { afterCall = null; save(l, { statut: st }); toast(label === "Pas dispo" ? "Lieu écarté" : "C'est noté"); },
     }, label))),
     h("button", { class: "text-btn", type: "button", onclick: () => { afterCall = null; renderPlace(); } }, "Plus tard"));
+}
+
+function trackSection(l) {
+  const sel = h("select", { class: "cell-select", "aria-label": "Où on en est" },
+    STATUTS.map(s => h("option", { value: s, selected: (l.statut || "À appeler") === s }, s)));
+  sel.addEventListener("change", () => withName(() => save(l, { statut: sel.value })));
+  const who = l.qui
+    ? h("span", { class: "v" }, whoText(l),
+      h("button", { class: "mini", type: "button", onclick: () => release(l) }, "Libérer"))
+    : h("button", { class: "mini tint", type: "button", onclick: () => withName(() => takeOnly(l)) }, "Je m'en occupe");
+  const com = h("textarea", { class: "cell-notes", rows: "3", maxlength: "600", placeholder: "Ce qu'ils ont dit : musique jusqu'à 3 h, caution 1 500 €, rappeler mardi…", "aria-label": "Notes" });
+  com.value = String(l.commentaire || "").replace(/^'/, "");
+  com.addEventListener("change", () => save(l, { commentaire: com.value.trim().slice(0, 600) }));
+  return section("Suivi", [
+    h("div", { class: "cell" }, h("span", { class: "k" }, "S'en occupe"), who),
+    h("label", { class: "cell" }, h("span", { class: "k" }, "Où on en est"), h("span", { class: "select-wrap" }, sel, icon(ICON.updown, 14))),
+    h("div", { class: "cell stack" }, com),
+  ], l.maj ? "Mis à jour " + ago(l.maj) + "." : null);
 }
 
 function priceSection(l) {
@@ -333,24 +390,6 @@ function priceSection(l) {
   ], footer);
 }
 
-function trackSection(l) {
-  const sel = h("select", { class: "cell-select", "aria-label": "Où on en est" },
-    STATUTS.map(s => h("option", { value: s, selected: (l.statut || "À appeler") === s }, s)));
-  sel.addEventListener("change", () => save(l, { statut: sel.value }));
-  const who = l.qui
-    ? h("span", { class: "v" }, isMe(l.qui) ? "Toi" : l.qui,
-      h("button", { class: "mini", type: "button", onclick: () => save(l, { qui: "" }) }, "Libérer"))
-    : h("button", { class: "mini tint", type: "button", onclick: () => withName(n => save(l, { qui: n })) }, "Je m'en occupe");
-  const com = h("textarea", { class: "cell-notes", rows: "3", maxlength: "600", placeholder: "Ce qu'ils ont dit : musique jusqu'à 3 h, caution 1 500 €, rappeler mardi…", "aria-label": "Notes" });
-  com.value = l.commentaire || "";
-  com.addEventListener("change", () => save(l, { commentaire: com.value.trim().slice(0, 600) }));
-  return section("Suivi", [
-    h("div", { class: "cell" }, h("span", { class: "k" }, "S'en occupe"), who),
-    h("label", { class: "cell" }, h("span", { class: "k" }, "Où on en est"), h("span", { class: "select-wrap" }, sel, icon(ICON.updown, 14))),
-    h("div", { class: "cell stack" }, com),
-  ], l.maj ? "Mis à jour " + ago(l.maj) + "." : null);
-}
-
 function rateSection(l) {
   const { list, avg } = notes(l.id);
   const mine = (list.find(a => isMe(a.prenom)) || {}).note || 0;
@@ -359,8 +398,8 @@ function rateSection(l) {
     [1, 2, 3, 4, 5].map(k => h("button", {
       type: "button", class: k <= mine ? "on" : null, "aria-label": `${k} sur 5`, "aria-pressed": String(k === mine),
       onclick: () => rate(l, k === mine ? 0 : k),
-    }, icon(ICON.star, 26))));
-  const small = n => h("span", { class: "mini-stars", "aria-label": `${n} sur 5` }, [1, 2, 3, 4, 5].map(k => h("span", { class: k <= n ? "on" : null }, icon(ICON.star, 14))));
+    }, icon(ICON.star, 28))));
+  const small = n => h("span", { class: "mini-stars", "aria-label": `${n} sur 5` }, [1, 2, 3, 4, 5].map(k => h("span", { class: k <= n ? "on" : null }, icon(ICON.star, 15))));
   return section("Avis", [
     h("div", { class: "cell" }, h("span", { class: "k" }, "Toi"), stars),
     ...others.map(a => cell(a.prenom, small(a.note))),
@@ -368,12 +407,12 @@ function rateSection(l) {
 }
 
 function copyButton(t) {
-  const b = h("button", { class: "copy", type: "button", "aria-label": "Copier " + t }, icon(ICON.copy, 17));
+  const b = h("button", { class: "copy", type: "button", "aria-label": "Copier " + t }, icon(ICON.copy, 18));
   b.addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText(t);
-      b.replaceChildren(icon(ICON.check, 17));
-      setTimeout(() => b.replaceChildren(icon(ICON.copy, 17)), 1500);
+      b.replaceChildren(icon(ICON.check, 18));
+      setTimeout(() => b.replaceChildren(icon(ICON.copy, 18)), 1500);
     } catch (e) { toast("Copie impossible, appuie longuement sur le numéro"); }
   });
   return b;
@@ -384,9 +423,40 @@ function contactSection(l) {
   if (!tels.length && !l.email) return null;
   return section("Contact", [
     ...tels.map(t => h("div", { class: "cell" },
-      h("button", { class: "cell-link", type: "button", onclick: () => call(l, t) }, icon(ICON.phone, 17), t), copyButton(t))),
-    l.email ? h("div", { class: "cell" }, h("a", { class: "cell-link", href: "mailto:" + l.email }, icon(ICON.mail, 17), l.email)) : null,
+      h("button", { class: "cell-link", type: "button", onclick: () => call(l, t) }, icon(ICON.phone, 18), t), copyButton(t))),
+    l.email ? h("div", { class: "cell" }, h("a", { class: "cell-link", href: "mailto:" + l.email }, icon(ICON.mail, 18), l.email)) : null,
   ]);
+}
+
+const checkOf = l => verif.lieux[l.id] || {};
+const VERDICT = { "ok": ["green", "Colle à ce qu'on cherche"], "à vérifier": ["orange", "À confirmer au téléphone"], "problème": ["red", "À revoir"] };
+
+// ce que la vérification a trouvé de bloquant, en une étiquette sur la ligne
+function checkTag(l) {
+  const v = checkOf(l);
+  if (v.dispo === "indispo") return [h("span", { class: "pill red" }, "Pris selon l'annonce")];
+  return v.verdict === "problème" ? [h("span", { class: "pill red" }, "À revoir")] : null;
+}
+
+function verifSection(l) {
+  const v = checkOf(l), [tone, label] = Object.prototype.hasOwnProperty.call(VERDICT, v.verdict) ? VERDICT[v.verdict] : [];
+  if (!label) return null;
+  return section("Vérifié le " + verif.date, [
+    h("div", { class: "cell" }, h("span", { class: "pill " + tone }, label)),
+    v.resume ? h("div", { class: "cell" }, h("span", { class: "k wrap" }, v.resume)) : null,
+  ], v.dispo === "dispo" ? "Annoncé libre en ligne pour nos dates." : v.dispo === "indispo" ? "Annoncé pris en ligne pour nos dates." : "Pas de calendrier en ligne : la dispo se confirme au téléphone.");
+}
+
+function askSection(l) {
+  if (l.aAppeler === "non") return null;
+  const own = typeof checkOf(l).demander === "string" ? checkOf(l).demander : "";
+  const ask = q => h("div", { class: "cell" }, h("span", { class: "k wrap" }, q));
+  return section("À demander", [own ? h("div", { class: "cell" }, h("span", { class: "k wrap" }, h("b", {}, "Pour ce lieu : "), own)) : null, ...ASK.map(ask)]);
+}
+
+function historySection(l) {
+  const list = data.journal.filter(e => e.id === l.id).slice(-8).reverse();
+  return list.length ? section("Historique", list.map(e => logLine(e, false))) : null;
 }
 
 function placeView(l) {
@@ -398,13 +468,16 @@ function placeView(l) {
       h("h2", { class: "place-title" }, l.nom),
       sub ? h("p", { class: "place-sub" }, sub) : null,
       l.infos ? h("p", { class: "place-info" }, l.infos) : null,
+      busyNote(l),
       actions(l),
       afterCall === l.id ? resultPrompt(l) : null,
       trackSection(l),
       priceSection(l),
       rateSection(l),
       contactSection(l),
-      l.aAppeler !== "non" ? section("À demander", ASK.map(q => h("div", { class: "cell" }, h("span", { class: "k wrap" }, q)))) : null,
+      verifSection(l),
+      askSection(l),
+      historySection(l),
       h("div", { class: "group" }, st === "Abandonné"
         ? h("button", { class: "row-btn tint", type: "button", onclick: () => save(l, { statut: "À appeler" }) }, "Remettre dans la liste")
         : h("button", { class: "row-btn danger", type: "button", onclick: () => { save(l, { statut: "Abandonné" }); toast("Lieu écarté"); } }, "Écarter ce lieu"))));
@@ -412,12 +485,14 @@ function placeView(l) {
 
 function renderPlace() {
   const dlg = $("place");
-  const l = data.lieux.find(x => x.id === openId);
+  const l = findPlace(openId);
   if (!l) { if (dlg.open) dlg.close(); return; }
   const scroller = dlg.querySelector(".scroll");
   const top = scroller ? scroller.scrollTop : 0;
   const next = h("div", { class: "scroll" }, placeView(l));
-  dlg.replaceChildren(h("button", { class: "close", type: "button", "aria-label": "Fermer", onclick: () => dlg.close() }, icon(ICON.x, 16)), next);
+  // le message furtif peut vivre dans la fiche : il ne doit pas disparaître quand elle se redessine
+  const keep = toastEl && toastEl.parentNode === dlg ? [toastEl] : [];
+  dlg.replaceChildren(h("button", { class: "close", type: "button", "aria-label": "Fermer", onclick: () => dlg.close() }, icon(ICON.x, 16)), next, ...keep);
   next.scrollTop = top;
 }
 
@@ -433,69 +508,115 @@ function openPlace(id) {
 /* ---------- écritures : affichage immédiat, envoi en file ---------- */
 // writes : compte les gestes, pour jeter une lecture partie avant l'un d'eux
 let pending = 0, writes = 0, failed = false, chain = Promise.resolve();
+// Renvoie la réponse du script (null si l'envoi a échoué). Un affichage raté ne doit jamais bloquer la file.
 function send(req, optimistic) {
   writes++;
   if (optimistic) { data = optimistic(data); refresh(); }
   pending++;
-  chain = chain.then(async () => {
+  let reply = null;
+  chain = chain.catch(() => {}).then(async () => {
     try {
-      const d = await db.post(req);
-      if (pending === 1) data = d; // sinon une réponse plus ancienne écraserait un geste plus récent
+      reply = await db.post(req);
+      // sinon une réponse plus ancienne écraserait un geste plus récent ; un +/− pas encore envoyé garde la main
+      if (pending === 1) data = nbTimer ? { ...reply, nb: data.nb } : reply;
     } catch (e) {
-      failed = true;
+      // un refus du script a un message fait pour la page ; une panne de réseau, non
+      failed = e.server ? e.message : true;
     } finally {
       pending--;
     }
     if (pending) return;
-    if (failed) {
-      failed = false;
-      toast("Pas enregistré, vérifie ta connexion et réessaie");
-      await load(true);
-    }
-    refresh();
+    try {
+      if (failed) {
+        const why = failed;
+        failed = false;
+        if (why === "Lien invalide" || why === "Page fermée") return lock(why);
+        toast(typeof why === "string" ? why : "Pas enregistré, vérifie ta connexion et réessaie");
+        await load(true);
+      }
+      refresh();
+    } catch (e) { /* on garde la file en vie */ }
   });
-  return chain;
+  return chain.then(() => reply, () => reply);
 }
 
+const patchPlace = (d, id, p) => ({ ...d, lieux: d.lieux.map(x => x.id === id ? { ...x, ...p, maj: Date.now() } : x) });
+
 function save(l, patch) {
-  const cur = data.lieux.find(x => x.id === l.id) || l;
+  const cur = findPlace(l.id) || l;
   const full = { ...patch };
-  if (patch.statut && patch.statut !== "À appeler" && !cur.qui && !("qui" in patch) && myName()) full.qui = myName();
-  return send({ action: "maj", id: l.id, ...full },
-    d => ({ ...d, lieux: d.lieux.map(x => x.id === l.id ? { ...x, ...full, maj: Date.now() } : x) }));
+  const shown = { ...patch };
+  if (patch.statut && patch.statut !== "À appeler" && !cur.qui && myName()) Object.assign(shown, { qui: myName(), depuis: Date.now() });
+  if ("qui" in patch) { full.qui = patch.qui ? myName() : ""; Object.assign(shown, { qui: full.qui, depuis: full.qui ? Date.now() : "" }); }
+  return send({ action: "maj", id: l.id, ...full }, d => patchPlace(d, l.id, shown));
+}
+
+// Prend le lieu auprès de la Sheet, qui tranche sous verrou si deux personnes le font en même temps.
+// Renvoie {qui, depuis} si quelqu'un d'autre l'a déjà, sinon null.
+async function take(l) {
+  const cur = findPlace(l.id) || l;
+  if (cur.qui) return isMe(cur.qui) ? null : { qui: cur.qui, depuis: cur.depuis };
+  const d = await send({ action: "prendre", id: l.id }, x => patchPlace(x, l.id, { qui: myName(), depuis: Date.now() }));
+  return (d && d.conflit) || null;
+}
+
+async function takeOnly(l) {
+  const other = await take(l);
+  if (other) toast(other.qui + " s'en occupe déjà");
+}
+
+function release(l) {
+  const cur = findPlace(l.id) || l;
+  if (!cur.qui || isMe(cur.qui)) return save(l, { qui: "" });
+  askBox(`Libérer le lieu de ${cur.qui} ?`, `${cur.qui} ne s'en occupera plus. Ce sera noté dans l'historique.`,
+    "Libérer", "Annuler", () => save(l, { qui: "" }));
 }
 
 function call(l, tel) {
-  withName(n => {
-    const cur = data.lieux.find(x => x.id === l.id) || l;
-    afterCall = l.id;
-    if (!cur.qui) save(l, { qui: n });
+  withName(() => {
+    const cur = findPlace(l.id) || l;
+    const free = !cur.qui;
+    // le numéro est composé pendant le geste : iOS refuse un appel lancé quelques secondes plus tard
+    const dial = () => {
+      afterCall = l.id;
+      openPlace(l.id);
+      location.href = telHref(tel);
+      // les autres téléphones ont pu prendre le lieu depuis la dernière mise à jour : la Sheet tranche
+      if (free) take(l).then(other => { if (other) toast(`${other.qui} a pris ce lieu juste avant toi`); });
+      send({ action: "appel", id: l.id });
+    };
+    if (free || isMe(cur.qui)) return dial();
     openPlace(l.id);
-    location.href = telHref(tel);
+    const since = cur.depuis ? " " + ago(cur.depuis) : "";
+    askBox(`${cur.qui} s'en occupe déjà`,
+      `${cur.qui} a pris ce lieu${since}. Pour ne pas appeler deux fois, vois d'abord avec ${cur.qui}.`,
+      "Appeler quand même", "Ne pas appeler", dial);
   });
 }
 
 function rate(l, note) {
-  withName(n => send({ action: "avis", id: l.id, prenom: n, note }, d => {
-    const rest = d.avis.filter(a => !(a.id === l.id && a.prenom.toLowerCase() === n.toLowerCase()));
+  withName(n => send({ action: "avis", id: l.id, note }, d => {
+    const rest = d.avis.filter(a => !(a.id === l.id && sameName(a.prenom, n)));
     return { ...d, avis: note ? [...rest, { id: l.id, prenom: n, note }] : rest };
   }));
 }
 
 let nbTimer = null;
 function bumpNb(delta) {
-  const nb = Math.min(80, Math.max(10, data.nb + delta));
-  data = { ...data, nb };
-  writes++;
-  renderList();
-  clearTimeout(nbTimer);
-  nbTimer = setTimeout(() => { nbTimer = null; send({ action: "nb", nb }); }, 700);
+  withName(() => {
+    const nb = Math.min(80, Math.max(10, data.nb + delta));
+    data = { ...data, nb };
+    writes++;
+    renderList();
+    clearTimeout(nbTimer);
+    nbTimer = setTimeout(() => { nbTimer = null; send({ action: "nb", nb }); }, 700);
+  });
 }
 
 /* ---------- ajout d'un lieu ---------- */
 function setupAdd() {
   const dlg = $("dlg"), form = $("addform"), msg = $("addmsg");
-  $("add").addEventListener("click", () => { msg.textContent = ""; form.reset(); dlg.showModal(); });
+  $("add").addEventListener("click", () => withName(() => { msg.textContent = ""; form.reset(); dlg.showModal(); }));
   $("cancel").addEventListener("click", () => dlg.close());
   form.addEventListener("submit", async ev => {
     ev.preventDefault();
@@ -504,8 +625,8 @@ function setupAdd() {
     const lien = String(f.get("lien") || "").trim();
     const photoUrl = String(f.get("photo") || "").trim();
     if (!nom) { msg.textContent = "Il faut au moins un nom."; form.elements.nom.focus(); return; }
-    if (lien && !/^https?:\/\//i.test(lien)) { msg.textContent = "Le lien de l'annonce doit commencer par https://"; return; }
-    if (photoUrl && !/^https?:\/\//i.test(photoUrl)) { msg.textContent = "Le lien de la photo doit commencer par https://"; return; }
+    if (lien && !/^https:\/\//i.test(lien)) { msg.textContent = "Le lien de l'annonce doit commencer par https://"; return; }
+    if (photoUrl && !/^https:\/\//i.test(photoUrl)) { msg.textContent = "Le lien de la photo doit commencer par https://"; return; }
     const enLigne = f.get("enligne") === "on";
     $("addok").disabled = true;
     dlg.close();
@@ -514,16 +635,20 @@ function setupAdd() {
     await send({
       action: "ajout", nom, lien, photo: photoUrl, prix: Number(f.get("prix")) || "",
       couchages: String(f.get("couchages") || "").trim(), tel: String(f.get("tel") || "").trim(),
-      aAppeler: !enLigne, qui: myName(),
+      aAppeler: !enLigne,
     });
     $("addok").disabled = false;
   });
 }
 
-/* ---------- fenêtres : un tap sur le fond ferme ---------- */
+/* ---------- fenêtres : un tap sur le fond ferme (sauf le prénom tant qu'il manque) ---------- */
 function setupSheets() {
   document.querySelectorAll("dialog.sheet").forEach(d => {
-    d.addEventListener("click", ev => { if (ev.target === d) d.close(); });
+    d.addEventListener("click", ev => {
+      if (ev.target !== d) return;
+      if (d.id === "who" && !myName()) return;
+      d.close();
+    });
   });
   $("place").addEventListener("close", () => { openId = null; afterCall = null; });
 }
@@ -536,57 +661,22 @@ function tick() {
   $("countdown").textContent = d > 0 ? `J-${d}` : `minuit dans ${hh} h`;
 }
 
-/* ---------- la petite boule tramée (Bayer 4x4) à côté du titre ---------- */
-function orb() {
-  const c = $("orb"), ctx = c.getContext && c.getContext("2d"), N = c.width;
-  if (!ctx) return;
-  const B = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
-  const img = ctx.createImageData(N, N);
-  const still = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const color = () => {
-    const m = getComputedStyle(document.documentElement).getPropertyValue("--glow").trim().match(/^#(..)(..)(..)$/);
-    return m ? m.slice(1).map(x => parseInt(x, 16)) : [223, 154, 78];
-  };
-  let rgb = color(), last = -1e9;
-  function frame(t) {
-    if (t - last > 80) {
-      last = t;
-      const k = t / 1000;
-      for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) {
-        const nx = (x + .5 - N / 2) / (N / 2), ny = (y + .5 - N / 2) / (N / 2), r = Math.hypot(nx, ny);
-        let v = 0;
-        if (r < 1) {
-          const z = Math.sqrt(1 - r * r), lx = nx * Math.cos(k * .3) + z * Math.sin(k * .3);
-          const light = Math.max(0, .35 * lx - .55 * ny + .75 * z);
-          const band = .5 + .5 * Math.sin(lx * 5 + ny * 2 + k * .8) * Math.sin(ny * 4 - k * .5);
-          v = light * (.7 + .3 * band) + .08;
-        }
-        const i = (y * N + x) * 4;
-        img.data[i] = rgb[0]; img.data[i + 1] = rgb[1]; img.data[i + 2] = rgb[2];
-        img.data[i + 3] = r < 1 && v * 16 > B[(y & 3) * 4 + (x & 3)] + .5 ? 255 : 0;
-      }
-      ctx.putImageData(img, 0, 0);
-    }
-    if (!still && !document.hidden) requestAnimationFrame(frame);
-  }
-  document.addEventListener("visibilitychange", () => { if (!document.hidden && !still) requestAnimationFrame(frame); });
-  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { rgb = color(); last = -1e9; requestAnimationFrame(frame); });
-  requestAnimationFrame(frame);
-}
-
 /* ---------- démarrage ---------- */
 let locked = false;
-function lock() {
+function lock(why) {
   locked = true;
-  store.set("cle", "");
+  if (why !== "Page fermée") store.set("cle", "");
   document.querySelectorAll("dialog[open]").forEach(d => d.close());
+  $("lock-text").textContent = why === "Page fermée"
+    ? "La page est fermée pour le moment."
+    : "Cette page s'ouvre avec le lien de partage. Rouvre le lien reçu dans le groupe, ou demande-le à l'orga.";
   $("app").hidden = true;
   $("lock").hidden = false;
 }
 
 async function load(force) {
   if (locked) return;
-  if (API && !KEY) return lock();
+  if (API && !KEY) return lock("Lien invalide");
   const seq = writes;
   try {
     let d = await db.get();
@@ -594,33 +684,42 @@ async function load(force) {
       const seed = await (await fetch("seed.json")).json();
       d = await db.post({ action: "seed", lieux: seed });
     }
-    const quiet = seq === writes && !pending && !nbTimer && !typing() && !$("dlg").open && !$("who").open;
+    const quiet = seq === writes && !pending && !nbTimer && !typing() && !$("dlg").open && !$("who").open && !$("ask").open;
     if (!force && !quiet) return;
     const same = loaded && JSON.stringify(d) === JSON.stringify(data);
     data = d;
     loaded = true;
     if (!same) refresh();
   } catch (e) {
-    if (e.message === "Lien invalide") return lock();
+    if (e.message === "Lien invalide" || e.message === "Page fermée") return lock(e.message);
     loaded = true;
     refresh();
     toast("Impossible de charger la liste, réessaie dans un instant");
   }
 }
 
-$("less").addEventListener("click", () => bumpNb(-1));
-$("more").addEventListener("click", () => bumpNb(1));
-$("sort").addEventListener("change", ev => { sort = ev.target.value; renderList(); });
-if (SHEET) { $("sheet-link").href = SHEET; $("sheet-group").hidden = false; }
-$("mode").textContent = API ? "" : "Mode essai : ce que tu notes reste sur ce téléphone tant que le Drive n'est pas branché.";
-setupWho();
-setupAdd();
-setupSheets();
-renderWho();
-tick();
-setInterval(tick, 60000);
-renderList();
-load();
-orb();
-setInterval(() => { if (!document.hidden) load(); }, 60000);
-document.addEventListener("visibilitychange", () => { if (!document.hidden) load(); });
+async function start() {
+  $("less").addEventListener("click", () => bumpNb(-1));
+  $("more").addEventListener("click", () => bumpNb(1));
+  setupSort();
+  if (SHEET) { $("sheet-link").href = SHEET; $("sheet-group").hidden = false; }
+  $("mode").textContent = API ? "" : "Mode essai : ce que tu notes reste sur ce téléphone tant que le Drive n'est pas branché.";
+  setupWho();
+  setupAdd();
+  setupSheets();
+  renderWho();
+  tick();
+  setInterval(tick, 60000);
+  house($("house"));
+  renderList();
+  fetch("verif.json").then(r => r.ok ? r.json() : null).then(v => {
+    if (v && v.lieux) { verif = { date: String(v.date || ""), lieux: v.lieux }; refresh(); }
+  }).catch(() => { /* sans le fichier, la page marche pareil */ });
+  await load();
+  if (locked) return;
+  if (!myName()) openWho();
+  else sayHello();
+  setInterval(() => { if (!document.hidden) load(); }, 60000);
+  document.addEventListener("visibilitychange", () => { if (!document.hidden) load(); });
+}
+start();

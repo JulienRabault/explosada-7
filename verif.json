@@ -1,0 +1,227 @@
+{
+ "date": "30/10",
+ "lieux": {
+  "v01": {
+   "verdict": "à vérifier",
+   "dispo": "dispo",
+   "resume": "Domaine en Gers à 35 min, 37 couchages, 4 383 € pour 3 nuits. Mais grille tarifaire si pas 'familial' : à clarifier pour la fête.",
+   "demander": "Combien coûte la 'grille tarifaire' pour un réveillon de 35 amis, la musique est-elle permise jusqu'à tard (calme 12h-02h ?), et les 31 lits sont-ils tous dans le même bâtiment ?"
+  },
+  "v02": {
+   "verdict": "à vérifier",
+   "dispo": "dispo",
+   "resume": "Château de 36 lits à 40 min, 6 815 € (très juste sous 7 000 €). Peu d'avis, fête et chauffage à confirmer.",
+   "demander": "La musique tard (réveillon) est-elle permise, y a-t-il du chauffage partout, du personnel/voisins sur place, et le prix de 6 815 € est-il final (ménage, taxes, caution) ?"
+  },
+  "v03": {
+   "verdict": "à vérifier",
+   "dispo": "dispo",
+   "resume": "Château pop-rock, 10/10, fête permise. 6 820 € mais +2 000 € si 'événement' (≈8 820 €) et proprios sur place : à clarifier.",
+   "demander": "Un réveillon entre amis compte-t-il comme 'événement' (supplément 2 000 € + domaine entier ≈ 8 820 €) ? Jusqu'à quelle heure la musique, et les proprios vivant sur place sont-ils d'accord ?"
+  },
+  "v04": {
+   "verdict": "problème",
+   "dispo": "dispo",
+   "resume": "Super maison (9,6/10) à 3 582 €, mais ~2h15 de route et fêtes dedans après 22h (village, voisins) : limite.",
+   "demander": "Peut-on faire du son fort à l'intérieur jusqu'à tard le 31/12 malgré les voisins du village, et y a-t-il du chauffage pour 35 personnes ? (et trajet réel ~2h15)"
+  },
+  "v05": {
+   "verdict": "à vérifier",
+   "dispo": "à appeler",
+   "resume": "Domaine à fêtes (salle 200 pers., 50 couchages) à 40 min, mais pas de tarif, pas de cuisine collective vue, ouvert d'avril à octobre ?",
+   "demander": "Êtes-vous ouverts et chauffés du 31/12 au 03/01, privatisation totale avec cuisine pour 35, musique jusqu'à quelle heure, et devis tout compris ?"
+  },
+  "v06": {
+   "verdict": "à vérifier",
+   "dispo": "à appeler",
+   "resume": "Château entièrement privatisé à 45 min, 2 cuisines, chauffage inclus, fête OK. Mais 30 couchages seulement et prix Nouvel An sur devis.",
+   "demander": "Devis exact 31/12-03/01 avec réception, possibilité de loger 35 (matelas d'appoint ?), horaires de musique, et dispo à ces dates."
+  },
+  "v07": {
+   "verdict": "à vérifier",
+   "dispo": "à appeler",
+   "resume": "Château de 38 couchages en un bloc à 1h20, cuisine équipée et barnum. Prix, ouverture hivernale et règles de fête à demander.",
+   "demander": "Êtes-vous ouverts/chauffés du 31/12 au 03/01, le château est-il privatisé pour nous seuls, musique jusqu'à quelle heure, et devis total gestion libre ?"
+  },
+  "v08": {
+   "verdict": "à vérifier",
+   "dispo": "à appeler",
+   "resume": "Gîte de groupe privatisé (56 couchages, cuisine pro, salle sono 210 m²). Pas d'avis, règles de fête et prix Nouvel An à demander.",
+   "demander": "Tarif exact 31/12-03/01 avec la salle de 210 m² + ménage + chauffage, musique permise jusqu'à quelle heure, et dispo à ces dates."
+  },
+  "v09": {
+   "verdict": "à vérifier",
+   "dispo": "à appeler",
+   "resume": "Gîte communal de 43 lits superposés, 1 500 € le Nouvel An (le moins cher), cuisine pro. Confort simple, chauffage et fête à vérifier.",
+   "demander": "La mairie accepte-t-elle une soirée avec musique tard le 31/12 (voisins du hameau) et le chauffage tient-il pour 35 personnes ; électricité et draps en plus ?"
+  },
+  "v10": {
+   "verdict": "problème",
+   "dispo": "dispo",
+   "resume": "Domaine de réceptions à 30 min, cuisine pro, mais 30 couchages seulement et 7 159 € (juste au-dessus de 7 000 €). Pas d'avis.",
+   "demander": "Peut-on négocier sous 7 000 € en direct, loger 35 (matelas) et faire du son tard le 31/12 ; premiers clients, aucun avis."
+  },
+  "v11": {
+   "verdict": "problème",
+   "dispo": "dispo",
+   "resume": "Belle demeure 4,94/5 mais 30 personnes max et 7 336 € (210 €/pers), au-dessus du budget. Chauffage et fête non confirmés.",
+   "demander": "Prix direct sous 7 000 € pour 30-35 personnes, chauffage hivernal, musique tard le 31/12 et lits pour plus de 30 ?"
+  },
+  "v12": {
+   "verdict": "à vérifier",
+   "dispo": "dispo",
+   "resume": "Château privatisé, cuisine pro, 5 036 € sous le budget, dispo vue. Mais 30 couchages, aucun avis, tarif 'événement' à connaître.",
+   "demander": "Quel est le 'tarif spécial événements' pour un réveillon, le château est-il chauffé, la musique tard est-elle permise, et peut-on loger 35 ?"
+  },
+  "v13": {
+   "verdict": "à vérifier",
+   "dispo": "dispo",
+   "resume": "Gîte de 100 places équipé fête (sono, fumée, 2 salles), 6 120 € sur Abritel, dispo vue. À 2h pile, chauffage et avis inconnus.",
+   "demander": "Chauffage réel pour fin décembre (poêle seul ?), tarif 1 étage tout compris pour 35, horaires de musique, et possibilité d'annuler (Abritel non remboursable)."
+  },
+  "v14": {
+   "verdict": "à vérifier",
+   "dispo": "dispo",
+   "resume": "Château festif (scène, bars, 55 couchages, tout inclus) : 7 708 € sur Airbnb mais ~4 700 € en direct (estimé), et ~2h15 de route.",
+   "demander": "Prix direct pour 3 nuits (31/12-03/01) tout compris, et accord pour la fête du réveillon (horaires, voisins) ; trajet réel ~2h15 depuis Toulouse."
+  },
+  "v15": {
+   "verdict": "problème",
+   "dispo": "dispo",
+   "resume": "Moulin 4* très bien noté, 5 116 €, dispo vue. Mais 30 places, ~2h15 de route et accord obligatoire pour toute fête.",
+   "demander": "Accord pour une soirée de 35 avec musique tard le 31/12, salle de 85 m² (prix), lits pour 35 et chauffage de toutes les pièces ; trajet ~2h15."
+  },
+  "v16": {
+   "verdict": "problème",
+   "dispo": "à appeler",
+   "resume": "Ancien hôtel à 30 min mais seulement 27-30 couchages (<35), réouverture après rénovation non confirmée. Peu adapté.",
+   "demander": "Le lieu est-il rouvert et chauffé fin décembre, combien de couchages réels (27 ?), et prix des 3 nuits avec cuisine ?"
+  },
+  "v17": {
+   "verdict": "problème",
+   "dispo": "indispo",
+   "resume": "Ferme de 34 places à 50 min, mais Abritel refuse l'arrivée du 31/12 (pas de prix, séjour impossible). À appeler si on y tient.",
+   "demander": "Pourquoi l'arrivée du 31/12 n'est pas réservable (déjà pris ? séjour minimum ?) ; si libre en direct : prix, fête permise, chauffage."
+  },
+  "v18": {
+   "verdict": "problème",
+   "dispo": "à appeler",
+   "resume": "Château XIIIe avec parc à 55 min, mais 29 personnes max (château 21 + cottage 8), pas 37. Annonce Abritel introuvable : plutôt écarter.",
+   "demander": "Capacité réelle (29 ?), règle sur les fêtes, chauffage, dispo/prix 31/12-03/01 ; l'annonce Abritel p11091518 renvoie 'page non trouvée'."
+  },
+  "v19": {
+   "verdict": "problème",
+   "dispo": "indispo",
+   "resume": "Fête autorisée et privatif, mais 30 personnes max et Abritel affiche indisponible du 31/12 au 03/01.",
+   "demander": "Confirmer la dispo du 31/12 au 03/01 en direct (Abritel dit indisponible), si 35 personnes peuvent dormir, le prix total et le chauffage."
+  },
+  "v20": {
+   "verdict": "à vérifier",
+   "dispo": "à appeler",
+   "resume": "Très grand et très peu cher (21-23 €/pers.), mais aucune règle de fête ni calendrier visibles : à appeler.",
+   "demander": "Dispo du 31/12 au 03/01, tarif 2027 (par nuit ou par séjour ?), musique tard autorisée, chauffage et électricité."
+  },
+  "v21": {
+   "verdict": "problème",
+   "dispo": "indispo",
+   "resume": "Calendrier grandsgites : occupé du 23/12 au 02/01 (libre seulement dès le 03/01) donc impossible pour le réveillon.",
+   "demander": "Rien d'utile pour le réveillon : calendrier occupé jusqu'au 02/01, ne rappeler que pour une éventuelle annulation."
+  },
+  "v22": {
+   "verdict": "problème",
+   "dispo": "à appeler",
+   "resume": "Beau château privatif mais 30 max et loué à la semaine (7 000 € mini + fioul) : hors budget pour 3 nuits.",
+   "demander": "Un tarif 3 nuits du 31/12 au 03/01 est-il possible, avec fioul, et la dispo (par mail à inquiry@au-chateau.com, objet RHODES)."
+  },
+  "v23": {
+   "verdict": "à vérifier",
+   "dispo": "à appeler",
+   "resume": "Moins de 2 800 € pour 40 couchages, chauffé et privatisable ; dortoirs rustiques, dispo et bruit à confirmer.",
+   "demander": "Dispo du 31/12 au 03/01, musique tard autorisée (voisins en ville), une seule cuisine suffit-elle pour 35, ménage et caution 300 €."
+  },
+  "v24": {
+   "verdict": "problème",
+   "dispo": "indispo",
+   "resume": "Airbnb : 'Ces dates ne sont pas disponibles' pour le 31/12-03/01 ; 26 personnes max et propriétaire sur place.",
+   "demander": "Rien à rappeler pour 35 personnes : indisponible sur Airbnb, capacité 26 et propriétaire sur place."
+  },
+  "v25": {
+   "verdict": "problème",
+   "dispo": "dispo",
+   "resume": "Dates réservables mais Airbnb limite à moins de 24 voyageurs (22 lits) : trop petit pour 35.",
+   "demander": "Peut-on loger 30 à 35 personnes (matelas, annexes), à quel prix pour le 31/12-03/01, et la musique tard est-elle permise ?"
+  },
+  "v26": {
+   "verdict": "à vérifier",
+   "dispo": "à appeler",
+   "resume": "Château de 30 personnes max, ouvert jusqu'au 02/01/2027 : capacité, prix et règles de fête inconnus.",
+   "demander": "Capacité réelle (35 ?), départ le 03/01 possible (ouvert jusqu'au 02/01), prix total, fête et musique tard autorisées, dispo."
+  },
+  "v27": {
+   "verdict": "problème",
+   "dispo": "indispo",
+   "resume": "Calendrier grandsgites : occupé du 21/12 au 03/01, donc déjà réservé pour tout le réveillon.",
+   "demander": "Rien à rappeler : réservé du 21/12 au 03/01 (et minimum 5 nuits imposé), sauf annulation."
+  },
+  "v28": {
+   "verdict": "à vérifier",
+   "dispo": "à appeler",
+   "resume": "Grand et peu cher (~2 100-3 000 €), cuisine pro, mais lits superposés et règles de bruit inconnues.",
+   "demander": "Dispo du 31/12 au 03/01, musique tard permise (forfait 'savoir-vivre' ?), chauffage, exclusivité du lieu."
+  },
+  "v29": {
+   "verdict": "problème",
+   "dispo": "indispo",
+   "resume": "Calendrier grandsgites : occupé du 25/12 au 10/01, donc pas libre pour le réveillon.",
+   "demander": "Rien à rappeler : calendrier occupé du 25/12 au 10/01, sauf annulation."
+  },
+  "v30": {
+   "verdict": "à vérifier",
+   "dispo": "à appeler",
+   "resume": "Environ 2 400 € pour 32-36 couchages, chauffé ; l'annonce Airbnb liée affiche 'dates non disponibles' : à appeler.",
+   "demander": "Dispo du 31/12 au 03/01 (Airbnb dit indisponible pour un listing lié), musique tard autorisée, lieu seulement à nous."
+  },
+  "v31": {
+   "verdict": "à vérifier",
+   "dispo": "à appeler",
+   "resume": "Immense et ouvert l'hiver, mais gestion libre impossible l'hiver (repas obligatoires ?), prix et fête inconnus.",
+   "demander": "Formule imposée pour le 31/12-03/01 (demi-pension ?), prix total, privatisation, musique tard et dispo."
+  },
+  "v32": {
+   "verdict": "à vérifier",
+   "dispo": "à appeler",
+   "resume": "Grand centre ouvert toute l'année, mais prix hiver sur devis et règles de bruit affichées : fête incertaine.",
+   "demander": "Prix 3 nuits du 31/12 au 03/01, musique tard autorisée (règles de bruit), chauffage, exclusivité du centre, dispo."
+  },
+  "v33": {
+   "verdict": "à vérifier",
+   "dispo": "à appeler",
+   "resume": "Environ 4 700-5 500 € avec repas, mais repas imposés l'hiver, salle de 30 places et lieu non garanti privatif.",
+   "demander": "Privatisation du gîte pour le 31/12-03/01, musique tard autorisée, repas à notre charge possibles, dispo et prix total."
+  },
+  "v34": {
+   "verdict": "problème",
+   "dispo": "indispo",
+   "resume": "Calendrier grandsgites : complet du 19/12 au 02/01 (libre dès le 03/01), donc impossible pour le réveillon.",
+   "demander": "Rien à rappeler : complet du 19/12 au 02/01, sauf annulation."
+  },
+  "v35": {
+   "verdict": "à vérifier",
+   "dispo": "à appeler",
+   "resume": "Très grand, ouvert dès le 26/12 et ~3 700-5 300 € en pension, mais centre scolaire et fête non confirmée.",
+   "demander": "Privatisation pour le 31/12-03/01, musique tard autorisée, formule sans pension (cuisine à nous ?), chauffage et dispo."
+  },
+  "v36": {
+   "verdict": "problème",
+   "dispo": "indispo",
+   "resume": "Calendrier grandsgites : occupé du 28/12 au 03/01 ; de plus 2h20 de route et 30 couchages max.",
+   "demander": "Rien à rappeler : calendrier occupé du 28/12 au 03/01 et trajet trop long."
+  },
+  "v37": {
+   "verdict": "problème",
+   "dispo": "à appeler",
+   "resume": "Auberge à la chambre, non privatisable sur le papier et à 2h25 de Toulouse : ne colle pas à un réveillon de 35.",
+   "demander": "Privatisation totale possible pour 35 le 31/12-03/01 et à quel prix, musique tard ; mais trajet 2h25 hors critère."
+  }
+ }
+}
