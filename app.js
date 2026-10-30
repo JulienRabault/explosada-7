@@ -160,8 +160,9 @@ function setupWho() {
     }
     if (sameName(n, myName())) return acceptName(n);
     // deux copains du même prénom seraient confondus : on le signale avant
-    if (data.personnes.some(p => sameName(p, n))) {
-      return askBox(`Il y a déjà un ${n}`,
+    const twin = data.personnes.find(p => sameName(p, n));
+    if (twin) {
+      return askBox(`Il y a déjà un ${twin}`,
         `Si c'est toi sur un autre téléphone, continue. Sinon, ajoute l'initiale de ton nom (${n} B.) pour qu'on ne vous mélange pas.`,
         "C'est moi", "Changer", () => acceptName(n)).then(ok => { if (!ok) $("whoname").focus(); });
     }
@@ -185,11 +186,15 @@ function renderWho() {
   $("who-btn").setAttribute("aria-label", n ? `Tu es ${n}. Changer de prénom` : "Dire qui tu es");
 }
 // note la visite dans l'onglet Personnes, au plus une fois toutes les 6 h par téléphone
-function sayHello(force) {
-  if (!myName()) return;
+let helloing = false;
+async function sayHello(force) {
+  if (!myName() || helloing) return;
   if (!force && Date.now() - (Number(store.get("bonjour")) || 0) < 6 * 36e5) return;
-  store.set("bonjour", String(Date.now()));
-  send({ action: "bonjour" });
+  helloing = true;
+  const d = await send({ action: "bonjour" });
+  helloing = false;
+  // la Sheet occupée laisse tomber la visite : elle ne compte que si le prénom figure dans Personnes
+  if (d && d.personnes.some(isMe)) store.set("bonjour", String(Date.now()));
 }
 
 /* ---------- lecture des lieux ---------- */
@@ -750,6 +755,8 @@ async function load(force) {
     data = d;
     loaded = true;
     snapshot.save(d);
+    // sans ça, un homonyme arrivé plus tard ne serait pas prévenu que le prénom est pris
+    if (myName() && !d.personnes.some(isMe)) sayHello(true);
     if (!same) refresh();
   } catch (e) {
     if (e.message === "Lien invalide" || e.message === "Page fermée") return lock(e.message);
