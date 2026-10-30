@@ -710,7 +710,12 @@ async function start() {
   renderWho();
   tick();
   setInterval(tick, 60000);
-  sky($("sky"));
+  // les gerbes restent entre le titre et la pastille, au-dessus du sous-titre
+  sky($("sky"), () => {
+    const c = $("sky").getBoundingClientRect(), t = document.querySelector(".title-row h1").getBoundingClientRect();
+    const a = $("who-btn").getBoundingClientRect(), s = document.querySelector(".subtitle").getBoundingClientRect();
+    return { x0: t.right - c.left + 10, x1: a.left - c.left - 10, y0: 4, y1: s.top - c.top - 2 };
+  });
   renderList();
   fetch("verif.json").then(r => r.ok ? r.json() : null).then(v => {
     if (v && v.lieux) { verif = { date: String(v.date || ""), lieux: v.lieux }; refresh(); }

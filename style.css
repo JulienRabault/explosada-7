@@ -21,6 +21,10 @@ button,input,select,textarea{font:inherit;color:inherit}
 button{cursor:pointer}
 button:disabled{cursor:default;opacity:.35}
 :focus-visible{outline:2px solid var(--tint);outline-offset:2px}
+::selection{background:rgba(245,158,11,.3)}
+input,textarea{caret-color:var(--tint)}
+html{scrollbar-color:var(--label3) transparent}
+.row-sub,.v,.log-time,.list-count,.cell-input{font-variant-numeric:tabular-nums}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 
 .green{color:var(--green)}.orange{color:var(--orange)}.red{color:var(--red)}.blue{color:var(--blue)}.gray{color:var(--gray)}
@@ -33,10 +37,11 @@ button:disabled{cursor:default;opacity:.35}
 
 /* ---------- page ---------- */
 .app{max-width:680px;margin:0 auto;padding:0 16px calc(24px + env(safe-area-inset-bottom))}
-.top{position:relative;padding-top:calc(92px + env(safe-area-inset-top))}
-/* le ciel au-dessus du titre : des feux d'artifice tramés qui se fondent dans le fond de la page */
-.sky{position:absolute;top:0;left:-16px;width:calc(100% + 32px);height:calc(96px + env(safe-area-inset-top));image-rendering:pixelated;pointer-events:none;
-  -webkit-mask-image:linear-gradient(#000 55%,transparent);mask-image:linear-gradient(#000 55%,transparent)}
+.top{position:relative;padding-top:calc(28px + env(safe-area-inset-top))}
+/* les feux d'artifice tramés : sous l'en-tête, ils ne visent que la place libre à droite du titre (sky.js) */
+.sky{position:absolute;top:0;left:-16px;width:calc(100% + 32px);height:100%;image-rendering:pixelated;pointer-events:none}
+.title-row,.subtitle{position:relative}
+#countdown{color:var(--tint);font-weight:600;font-variant-numeric:tabular-nums}
 .title-row{display:flex;align-items:center;gap:12px}
 .title-row .avatar{margin-left:auto;background:#dcdce1}
 h1{margin:0;font-family:var(--display);font-size:34px;line-height:41px;font-weight:700;letter-spacing:-.01em}
