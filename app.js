@@ -77,7 +77,7 @@ const telHref = t => {
   if (d.startsWith("00")) return "tel:+" + d.slice(2);
   return "tel:" + (d.startsWith("0") ? "+33" + d.slice(1) : d);
 };
-const safeUrl = u => /^https:\/\//i.test(u || "") || /^img\/(t\/)?[\w.-]+$/.test(u || "") ? u : null;
+const safeUrl = u => /^https:\/\//i.test(u || "") || /^img\/([tp]\/)?[\w.-]+$/.test(u || "") ? u : null;
 // les photos du site ont une miniature légère dans img/t/ pour la liste
 const thumbUrl = u => /^img\/[\w.-]+$/.test(u || "") ? u.replace(/^img\//, "img/t/") : u;
 const canEdit = () => data.role !== "groupe";

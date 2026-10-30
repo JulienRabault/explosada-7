@@ -46,6 +46,6 @@ crayon > Version : Nouvelle version > Déployer. L'adresse `/exec` et la clé ne
 
 ## Fichiers
 
-`img/t/` (miniatures 128 px de la liste), `config.js` (adresses), `data.js` (lecture et écriture, mode essai local), `swipe.js` (le mode swipe : à droite 5 étoiles, à gauche 1, en haut on passe), `sky.js` (les feux
+`img/t/` (miniatures 128 px de la liste), `img/p/` + `photos.json` (jusqu'à 6 photos par lieu pour le swipe, prises sur les annonces le 30/10), `config.js` (adresses), `data.js` (lecture et écriture, mode essai local), `swipe.js` (le mode swipe : à droite 5 étoiles, à gauche 1, en haut on passe), `sky.js` (les feux
 d'artifice du titre), `app.js` (l'interface), `seed.json` (les 37 lieux de départ), `verif.json` (la relecture des
 annonces du 30/10, affichée dans chaque fiche ; fichier fixe, la Sheet n'y touche pas).
