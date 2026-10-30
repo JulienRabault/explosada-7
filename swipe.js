@@ -51,6 +51,7 @@ function openDeck(all) {
   deck.history = [];
   deck.open = false;
   deck.photo = 0;
+  $("swipe-help").hidden = !!store.get("swipe-vu");
   renderDeck();
   if (!$("swipe").open) $("swipe").showModal();
 }
@@ -242,6 +243,7 @@ function decide(note) {
   if (note) rate(l, note);
   else skipped.set(l.id, true);
   if (note && navigator.vibrate) navigator.vibrate(12);
+  if (!store.get("swipe-vu")) { store.set("swipe-vu", "1"); $("swipe-help").hidden = true; }
   deck.i++;
   deck.photo = 0;
   deck.open = false;
