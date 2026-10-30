@@ -137,7 +137,7 @@ function summary(l, isTop) {
     h("p", { class: "card-meta" },
       pricePill(l),
       beds ? h("span", {}, beds) : null,
-      list.length ? h("span", { class: "card-avg" }, icon(ICON.star, 14), `${virgule(avg)} (${list.length})`) : null),
+      seesVotes() && list.length ? h("span", { class: "card-avg" }, icon(ICON.star, 14), `${virgule(avg)} (${list.length})`) : null),
     l.infos || l.fete ? h("p", { class: "card-info" }, l.infos || l.fete) : null,
     mine ? h("p", { class: "card-mine" }, mine === LIKE ? "Tu as adoré" : mine === NOPE ? "Tu as dit bof" : `Ta note : ${mine} sur 5`) : null,
     isTop ? h("button", { class: "card-unfold", type: "button", "aria-label": "Tout voir sur " + l.nom, onclick: () => fold(true) }, icon(SWIPE_ICON.info, 22)) : null);
@@ -153,7 +153,7 @@ function detail(l) {
     h("h2", { class: "detail-title" }, l.nom),
     h("p", { class: "card-meta" },
       pricePill(l),
-      list.length ? h("span", { class: "detail-avg" }, icon(ICON.star, 14), `${virgule(avg)} sur 5`) : null,
+      seesVotes() && list.length ? h("span", { class: "detail-avg" }, icon(ICON.star, 14), `${virgule(avg)} sur 5`) : null,
       href ? h("a", { class: "detail-chip", href, target: "_blank", rel: "noopener noreferrer", "aria-label": "Voir l'annonce sur " + host(href) }, host(href), icon(ICON.out, 13)) : null),
     l.infos ? h("p", { class: "detail-p" }, l.infos) : null,
     h("div", { class: "dl" },
@@ -165,7 +165,7 @@ function detail(l) {
     label ? h("div", { class: "detail-check" },
       h("p", { class: "detail-h" }, "Vérifié le " + verif.date, h("span", { class: "pill " + tone }, label)),
       v.resume ? h("p", { class: "detail-p" }, v.resume) : null) : null,
-    list.length ? h("div", { class: "dl" },
+    seesVotes() && list.length ? h("div", { class: "dl" },
       h("p", { class: "detail-h" }, `Avis (${list.length})`),
       list.map(a => h("div", { class: "dl-row" }, h("span", { class: "dl-k" }, isMe(a.prenom) ? "Toi" : a.prenom), miniStars(a.note)))) : null,
     href ? h("a", { class: "detail-link", href, target: "_blank", rel: "noopener noreferrer" }, "Voir l'annonce sur " + host(href), icon(ICON.out, 15)) : null,
@@ -176,8 +176,10 @@ function doneView() {
   const any = deck.ids.length > 0;
   return h("div", { class: "deck-done" },
     h("h2", {}, any ? "C'est tout vu" : "Rien à noter"),
-    h("p", {}, any ? "Tes notes comptent dans le classement « Mieux notés »." : "Tu as vu tous les lieux."),
-    h("button", { class: "deck-cta", type: "button", onclick: showRanking }, "Voir le classement"),
+    h("p", {}, any ? (seesVotes() ? "Tes notes comptent dans le classement « Mieux notés »." : "Merci ! Le classement sera annoncé dans le groupe.") : "Tu as vu tous les lieux."),
+    seesVotes()
+      ? h("button", { class: "deck-cta", type: "button", onclick: showRanking }, "Voir le classement")
+      : h("button", { class: "deck-cta", type: "button", onclick: () => $("swipe").close() }, "Retour à la liste"),
     h("button", { class: "text-btn", type: "button", onclick: () => openDeck(true) }, "Revoir tous les lieux"));
 }
 

@@ -81,6 +81,11 @@ const safeUrl = u => /^https:\/\//i.test(u || "") || /^img\/([tp]\/)?[\w.-]+$/.t
 // les photos du site ont une miniature légère dans img/t/ pour la liste
 const thumbUrl = u => /^img\/[\w.-]+$/.test(u || "") ? u.replace(/^img\//, "img/t/") : u;
 const canEdit = () => data.role !== "groupe";
+// vote à l'aveugle : le groupe ne voit que sa propre note, pour ne pas être influencé par les autres
+const seesVotes = canEdit;
+const isVoteLog = e => /^(note |retire sa note)/.test(e.quoi || "");
+const visibleLog = list => seesVotes() ? list : list.filter(e => !isVoteLog(e));
+const sortsShown = () => SORTS.filter(s => s.key !== "avis" || seesVotes());
 const phones = l => String(l.tel || "").split("/").map(t => t.trim()).filter(Boolean);
 const shortBeds = l => String(l.couchages || "").replace(/\s*\(.*?\)/g, "").trim();
 const toneOf = pp => pp <= 150 ? "green" : pp <= 200 ? "orange" : "red";
@@ -249,7 +254,7 @@ function row(l) {
           t ? h("span", { class: toneOf(pp) }, euros(pp) + " / pers.") : "Prix à demander",
           beds ? " · " + beds : ""),
         foot ? h("span", { class: "row-foot" }, foot) : null),
-      list.length ? h("span", { class: "row-avg", "aria-label": `Moyenne ${virgule(avg)} sur 5` }, icon(ICON.star, 13), virgule(avg)) : null,
+      seesVotes() && list.length ? h("span", { class: "row-avg", "aria-label": `Moyenne ${virgule(avg)} sur 5` }, icon(ICON.star, 13), virgule(avg)) : null,
       h("span", { class: "chev" }, icon(ICON.chevron, 16))),
     canEdit() && tab === "call" && tels.length
       ? h("button", { class: "row-call" + (l.qui && !isMe(l.qui) ? " taken" : ""), type: "button", "aria-label": "Appeler " + l.nom, onclick: () => call(l, tels[0]) }, icon(ICON.phone, 20))
@@ -286,13 +291,14 @@ function renderList() {
   renderSort();
   $("list").replaceChildren(...(n ? shown.map(row) : [h("li", { class: "empty" }, loaded ? "Rien ici pour l'instant." : "Chargement des lieux…")]));
   renderSwipeEntry();
-  const recent = data.journal.slice(-6).reverse();
+  const recent = visibleLog(data.journal).slice(-6).reverse();
   $("activity").hidden = !recent.length;
   $("activity-list").replaceChildren(...recent.map(e => logLine(e, true)));
 }
 
 /* ---------- menu de tri ---------- */
 function renderSort() {
+  if (!sortsShown().some(s => s.key === sort)) sort = "prio";
   $("sort-btn").replaceChildren(SORTS.find(s => s.key === sort).label, icon(ICON.updown, 13));
   $("sort-btn").setAttribute("aria-label", "Trier : " + SORTS.find(s => s.key === sort).label);
 }
@@ -300,7 +306,7 @@ function toggleSort(open) {
   const menu = $("sort-menu");
   open = open === undefined ? menu.hidden : open;
   if (open) {
-    menu.replaceChildren(...SORTS.map(s => h("button", {
+    menu.replaceChildren(...sortsShown().map(s => h("button", {
       class: "menu-item", type: "button", role: "menuitemradio", "aria-checked": String(s.key === sort),
       onclick: () => { sort = s.key; toggleSort(false); renderList(); $("sort-btn").focus(); },
     }, h("span", { class: "check" }, icon(ICON.check, 18)), h("span", {}, s.label, h("small", {}, s.hint)))));
@@ -435,8 +441,9 @@ function rateSection(l) {
   const small = n => h("span", { class: "mini-stars", "aria-label": `${n} sur 5` }, [1, 2, 3, 4, 5].map(k => h("span", { class: k <= n ? "on" : null }, icon(ICON.star, 15))));
   return section("Avis", [
     h("div", { class: "cell" }, h("span", { class: "k" }, "Toi"), stars),
-    ...others.map(a => cell(a.prenom, small(a.note))),
-  ], list.length ? `Moyenne ${virgule(avg)} sur 5, ${list.length} avis.` : "Personne n'a encore noté. Touche une étoile.");
+    ...(seesVotes() ? others.map(a => cell(a.prenom, small(a.note))) : []),
+  ], !seesVotes() ? "Les notes des autres restent cachées, pour que chacun vote sans être influencé."
+    : list.length ? `Moyenne ${virgule(avg)} sur 5, ${list.length} avis.` : "Personne n'a encore noté. Touche une étoile.");
 }
 
 function copyButton(t) {
@@ -488,7 +495,7 @@ function askSection(l) {
 }
 
 function historySection(l) {
-  const list = data.journal.filter(e => e.id === l.id).slice(-8).reverse();
+  const list = visibleLog(data.journal).filter(e => e.id === l.id).slice(-8).reverse();
   return list.length ? section("Historique", list.map(e => logLine(e, false))) : null;
 }
 
