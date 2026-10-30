@@ -33,6 +33,5 @@ crayon > Version : Nouvelle version > Déployer. L'adresse `/exec` et la clé ne
 
 ## Fichiers
 
-`config.js` (adresses), `data.js` (lecture et écriture, mode essai local), `house.js` (la maison
-pixel), `app.js` (l'interface), `seed.json` (les 37 lieux de départ), `verif.json` (la relecture des
+`config.js` (adresses), `data.js` (lecture et écriture, mode essai local), `app.js` (l'interface), `seed.json` (les 37 lieux de départ), `verif.json` (la relecture des
 annonces du 30/10, affichée dans chaque fiche ; fichier fixe, la Sheet n'y touche pas).

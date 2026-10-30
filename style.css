@@ -35,11 +35,9 @@ button:disabled{cursor:default;opacity:.35}
 .app{max-width:680px;margin:0 auto;padding:0 16px calc(24px + env(safe-area-inset-bottom))}
 .top{padding-top:calc(28px + env(safe-area-inset-top))}
 .title-row{display:flex;align-items:center;gap:12px}
-/* l'icône de la page, comme une icône d'app : ciel de nuit, la maison et ses feux d'artifice */
-.house{flex:none;width:48px;height:48px;border-radius:11px;background:linear-gradient(#141b38,#2b3a6b);box-shadow:inset 0 0 0 .5px rgba(255,255,255,.12),0 1px 2px rgba(0,0,0,.12);image-rendering:pixelated}
 .title-row .avatar{margin-left:auto}
 h1{margin:0;font-family:var(--display);font-size:34px;line-height:41px;font-weight:700;letter-spacing:-.01em}
-.subtitle{margin:8px 0 0;font-size:15px;color:var(--label2)}
+.subtitle{margin:4px 0 0;font-size:15px;color:var(--label2)}
 .avatar{flex:none;width:36px;height:36px;border-radius:50%;border:0;background:var(--fill2);display:grid;place-items:center;font-size:17px;font-weight:600}
 
 .group{background:var(--card);border-radius:12px;overflow:hidden}
