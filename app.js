@@ -647,14 +647,22 @@ function planNotes(ms) {
   clearTimeout(notesTimer);
   notesTimer = setTimeout(sendNotes, Math.max(0, ms));
 }
+// minuterie, fermeture du swipe et passage en arrière-plan peuvent tomber ensemble : un seul envoi à la fois
+let notesBusy = false;
 async function sendNotes() {
   clearTimeout(notesTimer);
   notesTimer = null;
+  if (notesBusy) return planNotes(1500);
   notesSince = 0;
   const q = unsent.read();
   const notes = Object.entries(q).map(([id, note]) => ({ id, note }));
   if (!notes.length || !myName()) return;
-  if (await send({ action: "avis", notes })) unsent.drop(q);
+  notesBusy = true;
+  try {
+    if (await send({ action: "avis", notes })) unsent.drop(q);
+  } finally {
+    notesBusy = false;
+  }
 }
 // ses propres notes pas encore envoyées passent devant ce que dit la Sheet
 function withUnsent(d) {

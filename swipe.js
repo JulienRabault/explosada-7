@@ -11,7 +11,8 @@ const SWIPE_ICON = {
   down: '<path d="m6 9 6 6 6-6"/>',
 };
 // open : la carte du dessus est dépliée en fiche ; photo : la photo affichée sur cette carte
-const deck = { ids: [], i: 0, history: [], busy: false, open: false, photo: 0 };
+// done : lieux déjà vus avant d'ouvrir la pile, pour que le compteur reprenne où on en était
+const deck = { ids: [], i: 0, done: 0, history: [], busy: false, open: false, photo: 0 };
 let gallery = {}; // photos.json : plusieurs photos par lieu, la première en grand
 const photosOf = l => ((gallery[l.id] || []).length ? gallery[l.id] : [l.photo]).map(safeUrl).filter(Boolean);
 
@@ -45,6 +46,7 @@ function openDeck(all) {
   const list = all ? data.lieux.filter(swipeable) : toRate();
   deck.ids = [...list].sort((a, b) => (Number(b.prio) || 0) - (Number(a.prio) || 0)).map(l => l.id);
   deck.i = 0;
+  deck.done = all ? 0 : data.lieux.filter(swipeable).length - list.length;
   deck.history = [];
   deck.open = false;
   deck.photo = 0;
@@ -54,7 +56,7 @@ function openDeck(all) {
 
 function renderDeck() {
   const cur = findPlace(deck.ids[deck.i]), next = findPlace(deck.ids[deck.i + 1]);
-  $("swipe-count").textContent = cur ? `${deck.i + 1} / ${deck.ids.length}` : "";
+  $("swipe-count").textContent = cur ? `${deck.done + deck.i + 1} / ${deck.done + deck.ids.length}` : "";
   $("swipe-undo").disabled = !deck.history.length;
   ["swipe-nope", "swipe-like", "swipe-skip"].forEach(id => { $(id).disabled = !cur; });
   if (!cur) return $("swipe-stack").replaceChildren(doneView());
