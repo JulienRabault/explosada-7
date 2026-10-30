@@ -28,6 +28,14 @@ Couper l'accès à tout le monde d'un coup : `fermerLaPage` (et `rouvrirLaPage`)
 Coller le nouveau `Code.gs`, enregistrer, puis Déployer > Gérer les déploiements >
 crayon > Version : Nouvelle version > Déployer. L'adresse `/exec` et la clé ne changent pas.
 
+## Tenir à 40
+
+- Les notes partent par paquets (après 3 s de calme, au plus tard 20 s), pas une requête par swipe.
+  Si la Sheet est occupée ou le réseau coupé, elles restent sur le téléphone et repartent toutes seules.
+- La liste en cache est découpée en morceaux (limite Google de 100 Ko par valeur).
+- La visite (`bonjour`) n'attend jamais : si la Sheet est occupée, elle n'est simplement pas notée.
+- Les fichiers du site portent un numéro de version (`?v=…`) : à changer à chaque mise en ligne.
+
 ## Ce que la Sheet garde
 
 - Lieux : statut, qui s'en occupe et depuis quand (`Pris le`).

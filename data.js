@@ -39,6 +39,20 @@ const snapshot = {
   clear() { store.set("etat", ""); },
 };
 
+// Notes pas encore confirmées par la Sheet ({id: note}), gardées sur le téléphone jusqu'à l'envoi réussi.
+const unsent = {
+  read() {
+    try { return JSON.parse(store.get("notes")) || {}; } catch (e) { return {}; }
+  },
+  put(id, note) { store.set("notes", JSON.stringify({ ...this.read(), [id]: note })); },
+  // on n'efface que ce qui est parti : une note changée pendant l'envoi reste à envoyer
+  drop(sent) {
+    const q = this.read();
+    for (const [id, note] of Object.entries(sent)) if (q[id] === note) delete q[id];
+    store.set("notes", JSON.stringify(q));
+  },
+};
+
 // un réseau qui ne répond pas ne doit pas bloquer la file d'envoi
 async function fetch20(url, opts = {}) {
   const ctl = new AbortController();
@@ -110,9 +124,12 @@ const local = {
       log(id, "ajoute le lieu");
     }
     if (req.action === "avis") {
-      const rest = d.avis.filter(a => !(a.id === req.id && sameName(a.prenom, par)));
-      d.avis = req.note > 0 ? [...rest, { id: req.id, prenom: par, note: req.note }] : rest;
-      log(req.id, req.note > 0 ? `note ${req.note}/5` : "retire sa note");
+      req.notes.forEach(({ id, note }) => {
+        d.avis = [...d.avis.filter(a => !(a.id === id && sameName(a.prenom, par))), ...(note > 0 ? [{ id, prenom: par, note }] : [])];
+      });
+      const [one] = req.notes;
+      if (req.notes.length > 1) log("", `note ${req.notes.length} lieux`);
+      else if (one) log(one.id, one.note > 0 ? `note ${one.note}/5` : "retire sa note");
     }
     if (req.action === "nb") { d.nb = req.nb; log("", `passe à ${req.nb} personnes`); }
     if (req.action === "bonjour" && !d.personnes.some(p => sameName(p, par))) { d.personnes = [...d.personnes, par]; log("", "arrive"); }

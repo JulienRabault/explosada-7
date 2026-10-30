@@ -546,11 +546,13 @@ function send(req, optimistic) {
     try {
       reply = await db.post(req);
       // sinon une réponse plus ancienne écraserait un geste plus récent ; un +/− pas encore envoyé garde la main
-      if (pending === 1) data = nbTimer ? { ...reply, nb: data.nb } : reply;
+      if (pending === 1) data = withUnsent(nbTimer ? { ...reply, nb: data.nb } : reply);
       snapshot.save(reply);
     } catch (e) {
       // un refus du script a un message fait pour la page ; une panne de réseau, non
-      failed = e.server ? e.message : true;
+      // une note ratée reste sur le téléphone et repart toute seule plus tard
+      if (req.action === "avis" && !e.server) planNotes(30000);
+      else failed = e.server ? e.message : true;
     } finally {
       pending--;
     }
@@ -623,11 +625,38 @@ function call(l, tel) {
   });
 }
 
+/* ---------- notes : gardées sur le téléphone, envoyées par paquets ---------- */
+// Quand tout le groupe swipe en même temps, une requête par carte saturerait la Sheet.
+// On envoie après 3 s de calme, au plus tard 20 s après la première note, et on réessaie si la Sheet est occupée.
+let notesTimer = null, notesSince = 0;
 function rate(l, note) {
-  withName(n => send({ action: "avis", id: l.id, note }, d => {
-    const rest = d.avis.filter(a => !(a.id === l.id && sameName(a.prenom, n)));
-    return { ...d, avis: note ? [...rest, { id: l.id, prenom: n, note }] : rest };
-  }));
+  withName(() => {
+    unsent.put(l.id, note);
+    data = withUnsent(data);
+    refresh();
+    if (!notesSince) notesSince = Date.now();
+    planNotes(Math.min(3000, notesSince + 20000 - Date.now()));
+  });
+}
+function planNotes(ms) {
+  clearTimeout(notesTimer);
+  notesTimer = setTimeout(sendNotes, Math.max(0, ms));
+}
+async function sendNotes() {
+  clearTimeout(notesTimer);
+  notesTimer = null;
+  notesSince = 0;
+  const q = unsent.read();
+  const notes = Object.entries(q).map(([id, note]) => ({ id, note }));
+  if (!notes.length || !myName()) return;
+  if (await send({ action: "avis", notes })) unsent.drop(q);
+}
+// ses propres notes pas encore envoyées passent devant ce que dit la Sheet
+function withUnsent(d) {
+  const q = unsent.read(), me = myName(), ids = Object.keys(q);
+  if (!ids.length || !me) return d;
+  const rest = d.avis.filter(a => !(ids.includes(a.id) && sameName(a.prenom, me)));
+  return { ...d, avis: [...rest, ...ids.filter(id => q[id] > 0).map(id => ({ id, prenom: me, note: q[id] }))] };
 }
 
 let nbTimer = null;
@@ -716,6 +745,7 @@ async function load(force) {
     }
     const quiet = seq === writes && !pending && !nbTimer && !typing() && !$("dlg").open && !$("who").open && !$("ask").open;
     if (!force && !quiet) return;
+    d = withUnsent(d);
     const same = loaded && JSON.stringify(d) === JSON.stringify(data);
     data = d;
     loaded = true;
@@ -735,7 +765,7 @@ async function start() {
   setupSort();
   if (SHEET) $("sheet-link").href = SHEET;
   const snap = snapshot.read();
-  if (snap) { data = snap; loaded = true; }
+  if (snap) { data = withUnsent(snap); loaded = true; }
   $("mode").textContent = API ? "" : "Mode essai : ce que tu notes reste sur ce téléphone tant que le Drive n'est pas branché.";
   setupWho();
   setupAdd();
@@ -759,6 +789,7 @@ async function start() {
   if (!myName()) openWho();
   else sayHello();
   setInterval(() => { if (!document.hidden) load(); }, 60000);
-  document.addEventListener("visibilitychange", () => { if (!document.hidden) load(); });
+  document.addEventListener("visibilitychange", () => { if (document.hidden) sendNotes(); else load(); });
+  if (Object.keys(unsent.read()).length) planNotes(0);
 }
 start();

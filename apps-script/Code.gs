@@ -72,8 +72,8 @@ function doGet(e) {
   let verrou = false;
   try {
     // chaque téléphone relit la liste toutes les minutes : on sert une copie en cache
-    const copie = CacheService.getScriptCache().get(CACHE);
-    if (copie) return json(Object.assign(JSON.parse(copie), { role: qui }));
+    const copie = cacheLire();
+    if (copie) return json(Object.assign(copie, { role: qui }));
     // sans le verrou, une lecture lente pourrait remettre en cache un état plus ancien qu'une écriture
     verrou = lock.tryLock(3000);
     return json(Object.assign(etat(verrou), { role: qui }));
@@ -99,6 +99,8 @@ function doPost(e) {
     if (qui === "groupe" && !GROUPE_PEUT.includes(req.action)) throw oups("Ce lien sert seulement à noter les lieux");
     const par = req.action === "seed" ? "page" : prenom(req.par);
     limiter(par);
+    // noter une visite n'est pas urgent : si la Sheet est occupée, on laisse tomber sans faire attendre
+    if (req.action === "bonjour" && !lock.tryLock(2000)) return json(Object.assign(etat(false), { role: qui }));
     lock.waitLock(15000);
     const actions = { maj: majLieu, prendre: prendre, appel: appel, ajout: ajoutLieu, avis: donnerAvis, nb: changerNb, bonjour: bonjour, seed: seed };
     if (!Object.prototype.hasOwnProperty.call(actions, req.action)) throw oups("Action inconnue");
@@ -186,14 +188,37 @@ function etat(garder) {
   const personnes = lignes(feuille(PERSONNES)).filter(r => r[0]).map(r => sansApostrophe(r[0]));
   const o = { lieux, avis, journal, personnes, nb: nbPersonnes() };
   if (!garder) return o;
-  const cache = CacheService.getScriptCache();
   try {
-    cache.put(CACHE, JSON.stringify(o), 60);
+    cacheEcrire(JSON.stringify(o));
   } catch (err) {
-    cache.remove(CACHE); // au-delà de 100 Ko : surtout ne pas laisser l'ancienne copie
-    console.warn("Cache plein, on sert sans cache : " + err);
+    CacheService.getScriptCache().remove(CACHE); // surtout ne pas laisser l'ancienne copie
+    console.warn("Cache indisponible, on sert sans cache : " + err);
   }
   return o;
+}
+
+// Une valeur de cache est limitée à 100 Ko : la liste, avec les notes de 40 personnes, est coupée en morceaux.
+const MORCEAU = 25000; // caractères ; 4 octets au pire chacun
+function cacheEcrire(texte) {
+  const morceaux = {};
+  const n = Math.ceil(texte.length / MORCEAU);
+  for (let i = 0; i < n; i++) morceaux[CACHE + i] = texte.slice(i * MORCEAU, (i + 1) * MORCEAU);
+  morceaux[CACHE] = String(n);
+  CacheService.getScriptCache().putAll(morceaux, 60);
+}
+
+function cacheLire() {
+  const cache = CacheService.getScriptCache();
+  const n = Number(cache.get(CACHE));
+  if (!n) return null;
+  const cles = Array.from({ length: n }, (_, i) => CACHE + i);
+  const morceaux = cache.getAll(cles);
+  if (!cles.every(k => morceaux[k] != null)) return null;
+  try {
+    return JSON.parse(cles.map(k => morceaux[k]).join(""));
+  } catch (err) {
+    return null; // copie lue pendant qu'une autre s'écrivait : on relira la Sheet
+  }
 }
 
 function lignes(sh) {
@@ -298,24 +323,33 @@ function ajoutLieu(req, par) {
   noter(par, ligne.id, nom, "ajoute le lieu");
 }
 
+// Les notes arrivent par paquets (le mode swipe en envoie plusieurs d'un coup) : une seule écriture
+// de l'onglet Avis et une seule ligne au journal, pour tenir quand tout le groupe note en même temps.
+// Une note à 0 retire la note.
 function donnerAvis(req, par) {
-  const sh = feuille(LIEUX);
-  const ligne = lireLigne(sh, trouver(sh, req.id));
-  const note = Math.round(Number(req.note));
-  if (!(note >= 0 && note <= 5)) throw oups("Note entre 1 et 5");
+  const liste = (Array.isArray(req.notes) ? req.notes : [{ id: req.id, note: req.note }]).slice(0, MAX_LIEUX);
+  const noms = {};
+  lignes(feuille(LIEUX)).forEach(r => (noms[String(r[0])] = sansApostrophe(r[1])));
   const av = feuille(AVIS);
-  const data = lignes(av);
-  const i = data.findIndex(r => String(r[0]) === String(req.id) && memePrenom(r[1], par));
-  if (note === 0) {
-    if (i >= 0) av.deleteRow(i + 2);
-    noter(par, req.id, ligne.nom, "retire sa note");
-    return;
-  }
-  const valeurs = [[String(req.id), par, note, new Date()]];
-  if (i >= 0) av.getRange(i + 2, 1, 1, 4).setValues(valeurs);
-  else if (data.length >= MAX_AVIS) throw oups("Trop d'avis");
-  else av.appendRow(valeurs[0]);
-  noter(par, req.id, ligne.nom, "note " + note + "/5");
+  const avant = lignes(av).filter(r => r[0]).map(r => r.slice(0, 4));
+  let rows = avant;
+  const faites = liste.map(x => {
+    const id = String(x && x.id);
+    const note = Math.round(Number(x && x.note));
+    if (!ID.test(id) || !Object.prototype.hasOwnProperty.call(noms, id)) throw oups("Lieu introuvable");
+    if (!(note >= 0 && note <= 5)) throw oups("Note entre 1 et 5");
+    rows = rows.filter(r => !(String(r[0]) === id && memePrenom(r[1], par)));
+    if (note) rows.push([id, par, note, new Date()]);
+    return { id, note };
+  });
+  if (!faites.length) return;
+  if (rows.length > MAX_AVIS) throw oups("Trop d'avis");
+  if (rows.length) av.getRange(2, 1, rows.length, 4).setValues(rows);
+  const fin = av.getLastRow() - 1;
+  if (fin > rows.length) av.getRange(2 + rows.length, 1, fin - rows.length, 4).clearContent();
+  if (faites.length > 1) return noter(par, "", "", "note " + faites.length + " lieux");
+  const { id, note } = faites[0];
+  noter(par, id, noms[id], note ? "note " + note + "/5" : "retire sa note");
 }
 
 function changerNb(req, par) {

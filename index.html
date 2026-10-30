@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=202610301650">
 </head>
 <body>
 <section class="lock" id="lock" hidden>
@@ -43,7 +43,7 @@
     </div>
   </section>
 
-  <button type="button" class="group swipe-entry" id="swipe-open">
+  <button type="button" class="group swipe-entry" id="swipe-open" hidden>
     <span class="swipe-text"><b>Mode swipe</b><small id="swipe-sub"></small></span>
   </button>
 
@@ -52,6 +52,7 @@
   <div class="list-head">
     <h2 class="list-count" id="count"></h2>
     <div class="sort">
+      <button type="button" class="sort-btn" id="swipe-mini" hidden>Swipe</button>
       <button type="button" class="sort-btn" id="sort-btn" aria-haspopup="menu" aria-expanded="false" aria-controls="sort-menu"></button>
       <div class="menu" id="sort-menu" role="menu" aria-label="Trier" hidden></div>
     </div>
@@ -146,10 +147,10 @@
 </dialog>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="config.js"></script>
-<script src="data.js"></script>
-<script src="sky.js"></script>
-<script src="swipe.js"></script>
-<script src="app.js"></script>
+<script src="config.js?v=202610301650"></script>
+<script src="data.js?v=202610301650"></script>
+<script src="sky.js?v=202610301650"></script>
+<script src="swipe.js?v=202610301650"></script>
+<script src="app.js?v=202610301650"></script>
 </body>
 </html>

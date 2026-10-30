@@ -13,10 +13,23 @@ const deck = { ids: [], i: 0, history: [], busy: false };
 
 const swipeable = l => statutOf(l) !== "Abandonné";
 const myNote = id => (data.avis.find(a => a.id === id && isMe(a.prenom)) || {}).note || 0;
-const toRate = () => data.lieux.filter(l => swipeable(l) && !myNote(l.id));
+// les lieux passés sans noter sont gardés sur le téléphone : on reprend là où on s'était arrêté
+const skipped = {
+  read() {
+    try { return JSON.parse(store.get("passes")) || []; } catch (e) { return []; }
+  },
+  set(id, on) { store.set("passes", JSON.stringify([...this.read().filter(x => x !== id), ...(on ? [id] : [])])); },
+};
+const toRate = () => {
+  const passed = skipped.read();
+  return data.lieux.filter(l => swipeable(l) && !myNote(l.id) && !passed.includes(l.id));
+};
 const reduceMotion = () => matchMedia("(prefers-reduced-motion: reduce)").matches;
 
+// le groupe vient surtout pour noter : grande carte ; les appelants gardent un petit bouton à côté du tri
 function renderSwipeEntry() {
+  $("swipe-open").hidden = !loaded || canEdit();
+  $("swipe-mini").hidden = !loaded || !canEdit();
   const n = toRate().length;
   $("swipe-sub").textContent = !loaded ? ""
     : n ? `${n} ${n > 1 ? "lieux" : "lieu"} à noter d'un geste`
@@ -73,7 +86,7 @@ function doneView() {
   const any = deck.ids.length > 0;
   return h("div", { class: "deck-done" },
     h("h2", {}, any ? "C'est tout vu" : "Rien à noter"),
-    h("p", {}, any ? "Tes notes comptent dans le classement « Mieux notés »." : "Tu as déjà noté tous les lieux."),
+    h("p", {}, any ? "Tes notes comptent dans le classement « Mieux notés »." : "Tu as vu tous les lieux."),
     h("button", { class: "deck-cta", type: "button", onclick: showRanking }, "Voir le classement"),
     h("button", { class: "text-btn", type: "button", onclick: () => openDeck(true) }, "Revoir tous les lieux"));
 }
@@ -132,6 +145,7 @@ function decide(note) {
   deck.busy = true;
   deck.history.push({ id: l.id, before: myNote(l.id), note });
   if (note) rate(l, note);
+  else skipped.set(l.id, true);
   deck.i++;
   fling($("swipe-stack").querySelector(".card.top"), note).then(() => {
     deck.busy = false;
@@ -155,6 +169,7 @@ function undo() {
   if (!last || deck.busy) return;
   const l = findPlace(last.id);
   if (l && last.note && last.note !== last.before) rate(l, last.before);
+  if (!last.note) skipped.set(last.id, false);
   deck.i = Math.max(0, deck.i - 1);
   renderDeck();
 }
@@ -166,8 +181,10 @@ function setupSwipe() {
   $("swipe-like").append(icon(SWIPE_ICON.heart, 30));
   $("swipe-undo").append(icon(SWIPE_ICON.undo, 20));
   $("swipe-skip").append(icon(SWIPE_ICON.up, 20));
-  $("swipe-open").addEventListener("click", () => withName(() => openDeck(!toRate().length)));
+  $("swipe-mini").prepend(icon(SWIPE_ICON.cards, 14));
+  [$("swipe-open"), $("swipe-mini")].forEach(b => b.addEventListener("click", () => withName(() => openDeck(!toRate().length))));
   $("swipe-close").addEventListener("click", () => $("swipe").close());
+  $("swipe").addEventListener("close", sendNotes);
   $("swipe-like").addEventListener("click", () => decide(LIKE));
   $("swipe-nope").addEventListener("click", () => decide(NOPE));
   $("swipe-skip").addEventListener("click", () => decide(0));
