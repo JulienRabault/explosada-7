@@ -76,20 +76,27 @@ function card(l, isTop) {
     open ? detail(l) : summary(l, isTop));
 }
 
+// Les photos d'annonce sont en paysage : plutôt que d'en étirer une sur toute la carte, on en montre trois
+// à leur format (une grande, deux petites). Un tap fait tourner les trois ; carte dépliée, une seule en grand.
 function photoBox(l, isTop) {
-  const pics = photosOf(l), at = isTop ? Math.min(deck.photo, pics.length - 1) : 0;
+  const pics = photosOf(l), at = isTop ? Math.min(deck.photo, Math.max(0, pics.length - 1)) : 0;
+  const open = isTop && deck.open;
+  const slots = !open && pics.length >= 3 ? 3 : 1;
   const none = () => h("span", { class: "card-img none" }, icon(ICON.house, 56));
-  let media = none();
-  if (pics.length) {
-    media = h("img", { class: "card-img", src: pics[at], alt: "", draggable: "false", decoding: "async", referrerpolicy: "no-referrer" });
-    media.addEventListener("error", () => media.replaceWith(none()));
-  }
-  const box = h("div", { class: "card-photos" },
-    media,
+  const cell = k => {
+    let media = none();
+    if (pics.length) {
+      media = h("img", { class: "card-img", src: pics[(at + k) % pics.length], alt: "", draggable: "false", decoding: "async", referrerpolicy: "no-referrer", "data-slot": k });
+      media.addEventListener("error", () => media.replaceWith(none()));
+    }
+    return h("div", { class: "ph " + (k ? "small" : "main") }, media);
+  };
+  const box = h("div", { class: "card-photos" + (slots === 1 ? " single" : "") },
+    Array.from({ length: slots }, (_, k) => cell(k)),
     pics.length > 1 ? h("div", { class: "card-bars", "aria-hidden": "true" }, pics.map((_, k) => h("span", { class: k === at ? "on" : null }))) : null,
-    isTop && deck.open ? h("button", { class: "card-fold", type: "button", "aria-label": "Refermer la fiche", onclick: () => fold(false) }, icon(SWIPE_ICON.down, 20)) : null);
+    open ? h("button", { class: "card-fold", type: "button", "aria-label": "Refermer la fiche", onclick: () => fold(false) }, icon(SWIPE_ICON.down, 20)) : null);
   // carte dépliée : on change de photo d'un tap ; repliée, c'est le geste qui s'en charge (drag)
-  if (isTop && deck.open) box.addEventListener("click", ev => {
+  if (open) box.addEventListener("click", ev => {
     if (ev.target.closest("button")) return;
     const r = box.getBoundingClientRect();
     flip(l, ev.clientX - r.left < r.width / 3 ? -1 : 1);
@@ -103,8 +110,7 @@ function flip(l, dir) {
   if (at < 0 || at >= pics.length) return;
   deck.photo = at;
   const el = $("swipe-stack").querySelector(".card.front");
-  const img = el.querySelector("img.card-img");
-  if (img) img.src = pics[at];
+  el.querySelectorAll("img.card-img").forEach(img => { img.src = pics[(at + Number(img.dataset.slot)) % pics.length]; });
   el.querySelectorAll(".card-bars span").forEach((b, k) => b.classList.toggle("on", k === at));
 }
 
@@ -141,7 +147,10 @@ function detail(l) {
   const line = (k, val) => val ? h("div", { class: "dl-row" }, h("span", { class: "dl-k" }, k), h("span", { class: "dl-v" }, val)) : null;
   return h("div", { class: "card-detail" },
     h("h2", { class: "detail-title" }, l.nom),
-    h("p", { class: "card-meta" }, pricePill(l), list.length ? h("span", { class: "detail-avg" }, icon(ICON.star, 14), `${virgule(avg)} sur 5`) : null),
+    h("p", { class: "card-meta" },
+      pricePill(l),
+      list.length ? h("span", { class: "detail-avg" }, icon(ICON.star, 14), `${virgule(avg)} sur 5`) : null,
+      href ? h("a", { class: "detail-chip", href, target: "_blank", rel: "noopener noreferrer", "aria-label": "Voir l'annonce sur " + host(href) }, host(href), icon(ICON.out, 13)) : null),
     l.infos ? h("p", { class: "detail-p" }, l.infos) : null,
     h("div", { class: "dl" },
       line("Prix 3 nuits", Number(l.prix) ? euros(Number(l.prix)) : "à demander"),
