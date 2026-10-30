@@ -9,6 +9,7 @@ const SWIPE_ICON = {
   up: '<path d="M12 19V5M5 12l7-7 7 7"/>',
   cards: '<rect x="8" y="3" width="12" height="16" rx="2"/><path d="M4 7v12a2 2 0 0 0 2 2h9"/>',
   down: '<path d="m6 9 6 6 6-6"/>',
+  info: '<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',
 };
 // open : la carte du dessus est dépliée en fiche ; photo : la photo affichée sur cette carte
 // done : lieux déjà vus avant d'ouvrir la pile, pour que le compteur reprenne où on en était
@@ -138,7 +139,7 @@ function summary(l, isTop) {
       list.length ? h("span", { class: "card-avg" }, icon(ICON.star, 14), `${virgule(avg)} (${list.length})`) : null),
     l.infos || l.fete ? h("p", { class: "card-info" }, l.infos || l.fete) : null,
     mine ? h("p", { class: "card-mine" }, mine === LIKE ? "Tu as adoré" : mine === NOPE ? "Tu as dit bof" : `Ta note : ${mine} sur 5`) : null,
-    isTop ? h("button", { class: "card-unfold", type: "button", "aria-label": "Tout voir sur " + l.nom, onclick: () => fold(true) }, icon(SWIPE_ICON.up, 18)) : null);
+    isTop ? h("button", { class: "card-unfold", type: "button", "aria-label": "Tout voir sur " + l.nom, onclick: () => fold(true) }, icon(SWIPE_ICON.info, 22)) : null);
 }
 
 // la fiche dans la carte : tout ce qu'il faut pour se décider, sans quitter le swipe

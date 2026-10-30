@@ -278,6 +278,7 @@ dialog.deck[open]{display:flex;flex-direction:column;animation:fade .25s ease}
 .deck-count{margin-left:4px;color:var(--label2);font-weight:500;font-variant-numeric:tabular-nums}
 /* la carte garde un format portrait (1 × 1,72) et prend toute la place qu'elle peut */
 .deck-stack{flex:1;min-height:0;margin:6px 16px 0;container-type:size;display:grid;place-items:center}
+.deck-stack:focus{outline:none}
 .deck-frame{--h:min(100cqh,172cqw,760px);position:relative;height:var(--h);width:calc(var(--h) / 1.72)}
 
 .card{position:absolute;inset:0;display:flex;flex-direction:column;border-radius:22px;overflow:hidden;background:#1f1812;color:#fff;box-shadow:0 24px 48px -24px rgba(90,45,0,.6),0 0 0 .5px rgba(0,0,0,.08);touch-action:none;-webkit-user-select:none;user-select:none}
