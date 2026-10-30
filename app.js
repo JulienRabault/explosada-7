@@ -280,6 +280,7 @@ function renderList() {
   $("note").textContent = loaded && n ? TABS.find(t => t.key === tab).note : "";
   renderSort();
   $("list").replaceChildren(...(n ? shown.map(row) : [h("li", { class: "empty" }, loaded ? "Rien ici pour l'instant." : "Chargement des lieux…")]));
+  renderSwipeEntry();
   const recent = data.journal.slice(-6).reverse();
   $("activity").hidden = !recent.length;
   $("activity-list").replaceChildren(...recent.map(e => logLine(e, true)));
@@ -739,6 +740,7 @@ async function start() {
   setupWho();
   setupAdd();
   setupSheets();
+  setupSwipe();
   renderWho();
   tick();
   setInterval(tick, 60000);

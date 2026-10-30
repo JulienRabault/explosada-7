@@ -43,6 +43,10 @@
     </div>
   </section>
 
+  <button type="button" class="group swipe-entry" id="swipe-open">
+    <span class="swipe-text"><b>Mode swipe</b><small id="swipe-sub"></small></span>
+  </button>
+
   <div class="seg-bar"><div class="seg" id="tabs" role="group" aria-label="Lieux"></div></div>
 
   <div class="list-head">
@@ -69,6 +73,22 @@
     <p>Prix relevés en ligne le 29/10/2026 pour les 3 nuits, avant négociation. Annonces relues le 30/10 : dispo, couchages, cuisine, fête, chauffage.</p>
   </footer>
 </main>
+
+<dialog class="deck" id="swipe" aria-labelledby="swipe-title">
+  <div class="nav">
+    <button type="button" class="nav-btn" id="swipe-close">Fermer</button>
+    <h2 id="swipe-title">Swipe <span class="deck-count" id="swipe-count"></span></h2>
+    <span></span>
+  </div>
+  <div class="deck-stack" id="swipe-stack"></div>
+  <div class="deck-btns">
+    <button type="button" class="round small" id="swipe-undo" aria-label="Revenir au lieu précédent"></button>
+    <button type="button" class="round big nope" id="swipe-nope" aria-label="Bof : 1 étoile"></button>
+    <button type="button" class="round big like" id="swipe-like" aria-label="J'adore : 5 étoiles"></button>
+    <button type="button" class="round small" id="swipe-skip" aria-label="Passer sans noter"></button>
+  </div>
+  <p class="deck-help">À droite, 5 étoiles. À gauche, 1 étoile. Vers le haut, tu passes.</p>
+</dialog>
 
 <dialog class="sheet" id="place" aria-label="Fiche du lieu"></dialog>
 
@@ -129,6 +149,7 @@
 <script src="config.js"></script>
 <script src="data.js"></script>
 <script src="sky.js"></script>
+<script src="swipe.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
