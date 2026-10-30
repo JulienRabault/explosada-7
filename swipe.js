@@ -127,17 +127,15 @@ const pricePill = l => {
   const t = total(l), pp = t / data.nb;
   return h("span", { class: "card-price" + (t ? " " + toneOf(pp) : "") }, t ? euros(pp) + " / pers." : "Prix à demander");
 };
-const miniStars = n => h("span", { class: "mini-stars", "aria-label": `${n} sur 5` }, [1, 2, 3, 4, 5].map(k => h("span", { class: k <= n ? "on" : null }, icon(ICON.star, 15))));
 
+// pas de moyenne dans le swipe, même pour les appelants : chacun vote sans voir les autres
 function summary(l, isTop) {
-  const { list, avg } = notes(l.id);
   const mine = myNote(l.id), beds = shortBeds(l);
   return h("div", { class: "card-text" },
     h("h2", { class: "card-title" }, l.nom),
     h("p", { class: "card-meta" },
       pricePill(l),
-      beds ? h("span", {}, beds) : null,
-      seesVotes() && list.length ? h("span", { class: "card-avg" }, icon(ICON.star, 14), `${virgule(avg)} (${list.length})`) : null),
+      beds ? h("span", {}, beds) : null),
     l.infos || l.fete ? h("p", { class: "card-info" }, l.infos || l.fete) : null,
     mine ? h("p", { class: "card-mine" }, mine === LIKE ? "Tu as adoré" : mine === NOPE ? "Tu as dit bof" : `Ta note : ${mine} sur 5`) : null,
     isTop ? h("button", { class: "card-unfold", type: "button", "aria-label": "Tout voir sur " + l.nom, onclick: () => fold(true) }, icon(SWIPE_ICON.info, 22)) : null);
@@ -145,7 +143,6 @@ function summary(l, isTop) {
 
 // la fiche dans la carte : tout ce qu'il faut pour se décider, sans quitter le swipe
 function detail(l) {
-  const { list, avg } = notes(l.id);
   const st = statutOf(l), href = safeUrl(l.lien), v = checkOf(l);
   const [tone, label] = Object.prototype.hasOwnProperty.call(VERDICT, v.verdict) ? VERDICT[v.verdict] : [];
   const line = (k, val) => val ? h("div", { class: "dl-row" }, h("span", { class: "dl-k" }, k), h("span", { class: "dl-v" }, val)) : null;
@@ -153,7 +150,6 @@ function detail(l) {
     h("h2", { class: "detail-title" }, l.nom),
     h("p", { class: "card-meta" },
       pricePill(l),
-      seesVotes() && list.length ? h("span", { class: "detail-avg" }, icon(ICON.star, 14), `${virgule(avg)} sur 5`) : null,
       href ? h("a", { class: "detail-chip", href, target: "_blank", rel: "noopener noreferrer", "aria-label": "Voir l'annonce sur " + host(href) }, host(href), icon(ICON.out, 13)) : null),
     l.infos ? h("p", { class: "detail-p" }, l.infos) : null,
     h("div", { class: "dl" },
@@ -165,9 +161,6 @@ function detail(l) {
     label ? h("div", { class: "detail-check" },
       h("p", { class: "detail-h" }, "Vérifié le " + verif.date, h("span", { class: "pill " + tone }, label)),
       v.resume ? h("p", { class: "detail-p" }, v.resume) : null) : null,
-    seesVotes() && list.length ? h("div", { class: "dl" },
-      h("p", { class: "detail-h" }, `Avis (${list.length})`),
-      list.map(a => h("div", { class: "dl-row" }, h("span", { class: "dl-k" }, isMe(a.prenom) ? "Toi" : a.prenom), miniStars(a.note)))) : null,
     href ? h("a", { class: "detail-link", href, target: "_blank", rel: "noopener noreferrer" }, "Voir l'annonce sur " + host(href), icon(ICON.out, 15)) : null,
     canEdit() ? h("button", { class: "text-btn", type: "button", onclick: () => openPlace(l.id) }, "Suivi et appel") : null);
 }
