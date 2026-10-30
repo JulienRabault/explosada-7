@@ -8,8 +8,12 @@ const SWIPE_ICON = {
   undo: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/>',
   up: '<path d="M12 19V5M5 12l7-7 7 7"/>',
   cards: '<rect x="8" y="3" width="12" height="16" rx="2"/><path d="M4 7v12a2 2 0 0 0 2 2h9"/>',
+  down: '<path d="m6 9 6 6 6-6"/>',
 };
-const deck = { ids: [], i: 0, history: [], busy: false };
+// open : la carte du dessus est dépliée en fiche ; photo : la photo affichée sur cette carte
+const deck = { ids: [], i: 0, history: [], busy: false, open: false, photo: 0 };
+let gallery = {}; // photos.json : plusieurs photos par lieu, la première en grand
+const photosOf = l => ((gallery[l.id] || []).length ? gallery[l.id] : [l.photo]).map(safeUrl).filter(Boolean);
 
 const swipeable = l => statutOf(l) !== "Abandonné";
 const myNote = id => (data.avis.find(a => a.id === id && isMe(a.prenom)) || {}).note || 0;
@@ -42,6 +46,8 @@ function openDeck(all) {
   deck.ids = [...list].sort((a, b) => (Number(b.prio) || 0) - (Number(a.prio) || 0)).map(l => l.id);
   deck.i = 0;
   deck.history = [];
+  deck.open = false;
+  deck.photo = 0;
   renderDeck();
   if (!$("swipe").open) $("swipe").showModal();
 }
@@ -54,32 +60,103 @@ function renderDeck() {
   if (!cur) return $("swipe-stack").replaceChildren(doneView());
   const top = card(cur, true);
   $("swipe-stack").replaceChildren(...(next ? [card(next, false)] : []), top);
-  drag(top);
+  if (!deck.open) drag(top, cur);
+  // les photos de la carte du dessus et la première de la suivante arrivent avant qu'on les demande
+  [...photosOf(cur), ...(next ? photosOf(next).slice(0, 1) : [])].forEach(src => { new Image().src = src; });
 }
 
 function card(l, isTop) {
-  const t = total(l), pp = t / data.nb, src = safeUrl(l.photo), beds = shortBeds(l);
-  const { list, avg } = notes(l.id);
-  const mine = myNote(l.id);
-  let media = h("span", { class: "card-img none" }, icon(ICON.house, 56));
-  if (src) {
-    media = h("img", { class: "card-img", src, alt: "", draggable: "false", decoding: "async", referrerpolicy: "no-referrer" });
-    media.addEventListener("error", () => media.replaceWith(h("span", { class: "card-img none" }, icon(ICON.house, 56))));
+  const open = isTop && deck.open;
+  return h("article", { class: "card " + (isTop ? "front" : "back") + (open ? " open" : ""), "aria-label": l.nom, "aria-hidden": isTop ? null : "true" },
+    photoBox(l, isTop),
+    open ? null : h("span", { class: "card-tint", "aria-hidden": "true" }),
+    open ? null : h("span", { class: "stamp like", "aria-hidden": "true" }, "J'adore"),
+    open ? null : h("span", { class: "stamp nope", "aria-hidden": "true" }, "Bof"),
+    open ? null : h("span", { class: "stamp skip", "aria-hidden": "true" }, "Je passe"),
+    open ? detail(l) : summary(l, isTop));
+}
+
+function photoBox(l, isTop) {
+  const pics = photosOf(l), at = isTop ? Math.min(deck.photo, pics.length - 1) : 0;
+  const none = () => h("span", { class: "card-img none" }, icon(ICON.house, 56));
+  let media = none();
+  if (pics.length) {
+    media = h("img", { class: "card-img", src: pics[at], alt: "", draggable: "false", decoding: "async", referrerpolicy: "no-referrer" });
+    media.addEventListener("error", () => media.replaceWith(none()));
   }
-  return h("article", { class: "card " + (isTop ? "top" : "next"), "aria-label": l.nom, "aria-hidden": isTop ? null : "true" },
+  const box = h("div", { class: "card-photos" },
     media,
-    h("span", { class: "stamp like", "aria-hidden": "true" }, "J'adore"),
-    h("span", { class: "stamp nope", "aria-hidden": "true" }, "Bof"),
-    h("span", { class: "stamp skip", "aria-hidden": "true" }, "Je passe"),
-    h("div", { class: "card-text" },
-      h("h2", { class: "card-title" }, l.nom),
-      h("p", { class: "card-meta" },
-        h("span", { class: "card-price" + (t ? " " + toneOf(pp) : "") }, t ? euros(pp) + " / pers." : "Prix à demander"),
-        beds ? h("span", {}, beds) : null,
-        list.length ? h("span", { class: "card-avg" }, icon(ICON.star, 14), `${virgule(avg)} (${list.length})`) : null),
-      l.infos || l.fete ? h("p", { class: "card-info" }, l.infos || l.fete) : null,
-      mine ? h("p", { class: "card-mine" }, mine === LIKE ? "Tu as adoré" : mine === NOPE ? "Tu as dit bof" : `Ta note : ${mine} sur 5`) : null),
-    isTop ? h("button", { class: "card-more", type: "button", onclick: () => openPlace(l.id) }, "Voir la fiche", icon(ICON.chevron, 14)) : null);
+    pics.length > 1 ? h("div", { class: "card-bars", "aria-hidden": "true" }, pics.map((_, k) => h("span", { class: k === at ? "on" : null }))) : null,
+    isTop && deck.open ? h("button", { class: "card-fold", type: "button", "aria-label": "Refermer la fiche", onclick: () => fold(false) }, icon(SWIPE_ICON.down, 20)) : null);
+  // carte dépliée : on change de photo d'un tap ; repliée, c'est le geste qui s'en charge (drag)
+  if (isTop && deck.open) box.addEventListener("click", ev => {
+    if (ev.target.closest("button")) return;
+    const r = box.getBoundingClientRect();
+    flip(l, ev.clientX - r.left < r.width / 3 ? -1 : 1);
+  });
+  return box;
+}
+
+// passe à la photo voisine sans redessiner la carte (le geste en cours garde ses écouteurs)
+function flip(l, dir) {
+  const pics = photosOf(l), at = deck.photo + dir;
+  if (at < 0 || at >= pics.length) return;
+  deck.photo = at;
+  const el = $("swipe-stack").querySelector(".card.front");
+  const img = el.querySelector("img.card-img");
+  if (img) img.src = pics[at];
+  el.querySelectorAll(".card-bars span").forEach((b, k) => b.classList.toggle("on", k === at));
+}
+
+function fold(open) {
+  deck.open = open;
+  renderDeck();
+}
+
+const pricePill = l => {
+  const t = total(l), pp = t / data.nb;
+  return h("span", { class: "card-price" + (t ? " " + toneOf(pp) : "") }, t ? euros(pp) + " / pers." : "Prix à demander");
+};
+const miniStars = n => h("span", { class: "mini-stars", "aria-label": `${n} sur 5` }, [1, 2, 3, 4, 5].map(k => h("span", { class: k <= n ? "on" : null }, icon(ICON.star, 15))));
+
+function summary(l, isTop) {
+  const { list, avg } = notes(l.id);
+  const mine = myNote(l.id), beds = shortBeds(l);
+  return h("div", { class: "card-text" },
+    h("h2", { class: "card-title" }, l.nom),
+    h("p", { class: "card-meta" },
+      pricePill(l),
+      beds ? h("span", {}, beds) : null,
+      list.length ? h("span", { class: "card-avg" }, icon(ICON.star, 14), `${virgule(avg)} (${list.length})`) : null),
+    l.infos || l.fete ? h("p", { class: "card-info" }, l.infos || l.fete) : null,
+    mine ? h("p", { class: "card-mine" }, mine === LIKE ? "Tu as adoré" : mine === NOPE ? "Tu as dit bof" : `Ta note : ${mine} sur 5`) : null,
+    isTop ? h("button", { class: "card-unfold", type: "button", "aria-label": "Tout voir sur " + l.nom, onclick: () => fold(true) }, icon(SWIPE_ICON.up, 18)) : null);
+}
+
+// la fiche dans la carte : tout ce qu'il faut pour se décider, sans quitter le swipe
+function detail(l) {
+  const { list, avg } = notes(l.id);
+  const st = statutOf(l), href = safeUrl(l.lien), v = checkOf(l);
+  const [tone, label] = Object.prototype.hasOwnProperty.call(VERDICT, v.verdict) ? VERDICT[v.verdict] : [];
+  const line = (k, val) => val ? h("div", { class: "dl-row" }, h("span", { class: "dl-k" }, k), h("span", { class: "dl-v" }, val)) : null;
+  return h("div", { class: "card-detail" },
+    h("h2", { class: "detail-title" }, l.nom),
+    h("p", { class: "card-meta" }, pricePill(l), list.length ? h("span", { class: "detail-avg" }, icon(ICON.star, 14), `${virgule(avg)} sur 5`) : null),
+    l.infos ? h("p", { class: "detail-p" }, l.infos) : null,
+    h("div", { class: "dl" },
+      line("Prix 3 nuits", Number(l.prix) ? euros(Number(l.prix)) : "à demander"),
+      line("Obtenu au tél.", Number(l.prixNego) ? euros(Number(l.prixNego)) : null),
+      line("Couchages", l.couchages),
+      line("Fête", l.fete),
+      line("Où on en est", st ? st + (l.qui ? " · " + whoText(l) : "") : null)),
+    label ? h("div", { class: "detail-check" },
+      h("p", { class: "detail-h" }, "Vérifié le " + verif.date, h("span", { class: "pill " + tone }, label)),
+      v.resume ? h("p", { class: "detail-p" }, v.resume) : null) : null,
+    list.length ? h("div", { class: "dl" },
+      h("p", { class: "detail-h" }, `Avis (${list.length})`),
+      list.map(a => h("div", { class: "dl-row" }, h("span", { class: "dl-k" }, isMe(a.prenom) ? "Toi" : a.prenom), miniStars(a.note)))) : null,
+    href ? h("a", { class: "detail-link", href, target: "_blank", rel: "noopener noreferrer" }, "Voir l'annonce sur " + host(href), icon(ICON.out, 15)) : null,
+    canEdit() ? h("button", { class: "text-btn", type: "button", onclick: () => openPlace(l.id) }, "Suivi et appel") : null);
 }
 
 function doneView() {
@@ -99,7 +176,7 @@ function showRanking() {
 }
 
 /* ---------- le geste ---------- */
-function drag(el) {
+function drag(el, l) {
   const behind = el.previousElementSibling;
   let x0 = 0, y0 = 0, t0 = 0, dx = 0, dy = 0, active = false;
   const show = () => {
@@ -122,10 +199,16 @@ function drag(el) {
     dy = e.clientY - y0;
     show();
   });
-  const end = () => {
+  const end = e => {
     if (!active) return;
     active = false;
     el.classList.remove("dragging");
+    // un simple tap : en bas on déplie la fiche, ailleurs on change de photo (à gauche la précédente)
+    if (e.type === "pointerup" && Math.hypot(dx, dy) < 8 && performance.now() - t0 < 350) {
+      const r = el.getBoundingClientRect();
+      if (e.clientY - r.top > r.height * 0.7) return fold(true);
+      return flip(l, e.clientX - r.left < r.width / 3 ? -1 : 1);
+    }
     // un geste vif compte même s'il est court
     const fast = Math.abs(dx) / Math.max(1, performance.now() - t0) > 0.6;
     if (dx > 110 || (dx > 40 && fast)) return decide(LIKE);
@@ -146,8 +229,11 @@ function decide(note) {
   deck.history.push({ id: l.id, before: myNote(l.id), note });
   if (note) rate(l, note);
   else skipped.set(l.id, true);
+  if (note && navigator.vibrate) navigator.vibrate(12);
   deck.i++;
-  fling($("swipe-stack").querySelector(".card.top"), note).then(() => {
+  deck.photo = 0;
+  deck.open = false;
+  fling($("swipe-stack").querySelector(".card.front"), note).then(() => {
     deck.busy = false;
     renderDeck();
   });
@@ -157,6 +243,7 @@ function fling(el, note) {
   if (!el || reduceMotion()) return Promise.resolve();
   const [x, y, r] = note === LIKE ? [innerWidth * 1.3, 40, 26] : note === NOPE ? [-innerWidth * 1.3, 40, -26] : [0, -innerHeight, 0];
   el.style.setProperty(note === LIKE ? "--like" : note === NOPE ? "--nope" : "--skip", 1);
+  el.classList.remove("open");
   el.classList.add("gone");
   el.style.transform = `translate(${x}px, ${y}px) rotate(${r}deg)`;
   const behind = el.previousElementSibling;
@@ -171,6 +258,8 @@ function undo() {
   if (l && last.note && last.note !== last.before) rate(l, last.before);
   if (!last.note) skipped.set(last.id, false);
   deck.i = Math.max(0, deck.i - 1);
+  deck.open = false;
+  deck.photo = 0;
   renderDeck();
 }
 
@@ -185,13 +274,17 @@ function setupSwipe() {
   [$("swipe-open"), $("swipe-mini")].forEach(b => b.addEventListener("click", () => withName(() => openDeck(!toRate().length))));
   $("swipe-close").addEventListener("click", () => $("swipe").close());
   $("swipe").addEventListener("close", sendNotes);
+  // Échap replie d'abord la fiche avant de quitter le swipe
+  $("swipe").addEventListener("cancel", ev => { if (deck.open) { ev.preventDefault(); fold(false); } });
+  fetch("photos.json", { cache: "no-cache" }).then(r => r.ok ? r.json() : {}).then(g => { gallery = g || {}; })
+    .catch(() => { /* sans galerie, une photo par lieu */ });
   $("swipe-like").addEventListener("click", () => decide(LIKE));
   $("swipe-nope").addEventListener("click", () => decide(NOPE));
   $("swipe-skip").addEventListener("click", () => decide(0));
   $("swipe-undo").addEventListener("click", undo);
   $("swipe").addEventListener("keydown", ev => {
     if ($("place").open) return;
-    const act = { ArrowRight: () => decide(LIKE), ArrowLeft: () => decide(NOPE), ArrowUp: () => decide(0), Backspace: undo }[ev.key];
+    const act = { ArrowRight: () => decide(LIKE), ArrowLeft: () => decide(NOPE), ArrowUp: () => decide(0), ArrowDown: () => fold(!deck.open), Backspace: undo }[ev.key];
     if (!act) return;
     ev.preventDefault();
     act();

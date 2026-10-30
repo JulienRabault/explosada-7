@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=202610301650">
+<link rel="stylesheet" href="style.css?v=202610301658">
 </head>
 <body>
 <section class="lock" id="lock" hidden>
@@ -81,14 +81,14 @@
     <h2 id="swipe-title">Swipe <span class="deck-count" id="swipe-count"></span></h2>
     <span></span>
   </div>
-  <div class="deck-stack" id="swipe-stack"></div>
+  <div class="deck-stack"><div class="deck-frame" id="swipe-stack"></div></div>
   <div class="deck-btns">
     <button type="button" class="round small" id="swipe-undo" aria-label="Revenir au lieu précédent"></button>
     <button type="button" class="round big nope" id="swipe-nope" aria-label="Bof : 1 étoile"></button>
     <button type="button" class="round big like" id="swipe-like" aria-label="J'adore : 5 étoiles"></button>
     <button type="button" class="round small" id="swipe-skip" aria-label="Passer sans noter"></button>
   </div>
-  <p class="deck-help">À droite, 5 étoiles. À gauche, 1 étoile. Vers le haut, tu passes.</p>
+  <p class="deck-help">À droite 5 étoiles, à gauche 1, vers le haut tu passes. Touche la photo pour la suivante.</p>
 </dialog>
 
 <dialog class="sheet" id="place" aria-label="Fiche du lieu"></dialog>
@@ -147,10 +147,10 @@
 </dialog>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="config.js?v=202610301650"></script>
-<script src="data.js?v=202610301650"></script>
-<script src="sky.js?v=202610301650"></script>
-<script src="swipe.js?v=202610301650"></script>
-<script src="app.js?v=202610301650"></script>
+<script src="config.js?v=202610301658"></script>
+<script src="data.js?v=202610301658"></script>
+<script src="sky.js?v=202610301658"></script>
+<script src="swipe.js?v=202610301658"></script>
+<script src="app.js?v=202610301658"></script>
 </body>
 </html>
