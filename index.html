@@ -37,7 +37,7 @@
       <p class="people-n"><output id="nb">35</output> personnes</p>
       <p class="people-cap" id="cap"></p>
     </div>
-    <div class="stepper">
+    <div class="stepper" id="stepper">
       <button type="button" id="less" aria-label="Une personne de moins">−</button>
       <button type="button" id="more" aria-label="Une personne de plus">+</button>
     </div>
@@ -55,7 +55,7 @@
   <ul class="group list" id="list"><li class="empty">Chargement des lieux…</li></ul>
   <p class="list-foot" id="note"></p>
 
-  <div class="group"><button type="button" class="add-row" id="add">Ajouter un lieu</button></div>
+  <div class="group" id="add-group"><button type="button" class="add-row" id="add">Ajouter un lieu</button></div>
 
   <section class="sec" id="activity" hidden>
     <h2 class="sec-h">Dernières actions</h2>
@@ -80,7 +80,7 @@
       <button type="submit" class="nav-btn strong">OK</button>
     </div>
     <div class="sheet-body">
-      <p class="who-lead">C'est qui ? Ton prénom s'affiche à côté de ce que tu fais, pour que tout le monde sache qui appelle quel lieu.</p>
+      <p class="who-lead">C'est qui ? Ton prénom s'affiche à côté de ce que tu fais : appels, notes, avis.</p>
       <div class="group"><input class="solo" id="whoname" type="text" maxlength="30" autocomplete="given-name" autocapitalize="words" enterkeyhint="done" placeholder="Tom" aria-label="Ton prénom"></div>
       <p class="msg" id="whomsg" role="alert"></p>
       <p class="sec-f" id="who-list"></p>

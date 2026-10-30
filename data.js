@@ -5,7 +5,8 @@
 const API = (window.API_URL || "").trim();
 const SHEET = (window.SHEET_URL || "").trim();
 const PRENOM = /^[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ' .-]{0,29}$/;
-const VIDE = () => ({ lieux: [], avis: [], journal: [], personnes: [], nb: 35 });
+// role : "appel" (peut tout faire) ou "groupe" (voir et noter), donné par la Sheet selon le lien
+const VIDE = () => ({ lieux: [], avis: [], journal: [], personnes: [], nb: 35, role: "appel" });
 
 // préfixe : toutes les pages julienrabault.github.io partagent le même stockage
 const store = {
@@ -25,6 +26,18 @@ const KEY = (() => {
   history.replaceState(null, "", location.pathname + location.search);
   return m[1];
 })();
+
+// Dernière liste reçue, gardée sur le téléphone : la page s'affiche tout de suite, la Sheet confirme ensuite.
+const snapshot = {
+  read() {
+    try {
+      const s = JSON.parse(store.get("etat"));
+      return s && s.k === KEY ? { ...VIDE(), ...s.d } : null;
+    } catch (e) { return null; }
+  },
+  save(d) { store.set("etat", JSON.stringify({ k: KEY, d })); },
+  clear() { store.set("etat", ""); },
+};
 
 // un réseau qui ne répond pas ne doit pas bloquer la file d'envoi
 async function fetch20(url, opts = {}) {

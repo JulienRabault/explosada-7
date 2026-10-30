@@ -6,9 +6,11 @@
  * @OnlyCurrentDoc limite le script à cette seule Sheet : il ne peut rien lire d'autre dans le Drive.
  * Les onglets Lieux, Avis, Journal, Personnes et Réglages sont créés tout seuls.
  *
- * Accès : rien ne répond sans la clé du lien de partage, et chaque écriture est signée d'un prénom.
- * - creerLienDePartage() : à lancer une fois, le lien s'affiche dans le journal d'exécution.
- * - changerLienDePartage() : si le lien a fuité, l'ancien cesse de marcher.
+ * Accès : rien ne répond sans la clé d'un lien de partage, et chaque écriture est signée d'un prénom.
+ * Deux liens : celui des appelants peut tout faire, celui du groupe peut seulement voir et noter.
+ * - creerLienDePartage() : affiche les deux liens dans le journal d'exécution.
+ * - changerLienDuGroupe() : si le lien du groupe a fuité, l'ancien cesse de marcher.
+ * - changerLienDePartage() : change les deux liens.
  * - fermerLaPage() / rouvrirLaPage() : coupe tout d'un coup, sans rien effacer.
  */
 
@@ -57,21 +59,24 @@ const ENTETES = {
 const STATUTS = ["À appeler", "Pas de réponse", "Dispo", "Option posée", "Réservé", "Abandonné"];
 const PRENOM = /^[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ' .-]{0,29}$/;
 const ID = /^[\w-]{1,24}$/;
+const CLE_APPEL = "CLE";
+const CLE_GROUPE = "CLE_GROUPE";
+const GROUPE_PEUT = ["avis", "bonjour"];
 
 /* ---------- entrées ---------- */
 
 function doGet(e) {
-  const refus = refuse(e && e.parameter && e.parameter.k);
-  if (refus) return json({ error: refus });
+  const qui = role(e && e.parameter && e.parameter.k);
+  if (!qui) return json({ error: refus() });
   const lock = LockService.getScriptLock();
   let verrou = false;
   try {
     // chaque téléphone relit la liste toutes les minutes : on sert une copie en cache
     const copie = CacheService.getScriptCache().get(CACHE);
-    if (copie) return ContentService.createTextOutput(copie).setMimeType(ContentService.MimeType.JSON);
+    if (copie) return json(Object.assign(JSON.parse(copie), { role: qui }));
     // sans le verrou, une lecture lente pourrait remettre en cache un état plus ancien qu'une écriture
     verrou = lock.tryLock(3000);
-    return json(etat(verrou));
+    return json(Object.assign(etat(verrou), { role: qui }));
   } catch (err) {
     console.error(err);
     return json({ error: "Erreur, réessaie" });
@@ -87,17 +92,18 @@ function doPost(e) {
   } catch (err) {
     return json({ error: "Requête illisible" });
   }
-  const refus = refuse(req && req.k);
-  if (refus) return json({ error: refus });
+  const qui = role(req && req.k);
+  if (!qui) return json({ error: refus() });
   const lock = LockService.getScriptLock();
   try {
+    if (qui === "groupe" && !GROUPE_PEUT.includes(req.action)) throw oups("Ce lien sert seulement à noter les lieux");
     const par = req.action === "seed" ? "page" : prenom(req.par);
     limiter(par);
     lock.waitLock(15000);
     const actions = { maj: majLieu, prendre: prendre, appel: appel, ajout: ajoutLieu, avis: donnerAvis, nb: changerNb, bonjour: bonjour, seed: seed };
     if (!Object.prototype.hasOwnProperty.call(actions, req.action)) throw oups("Action inconnue");
     const extra = actions[req.action](req, par) || {};
-    return json(Object.assign(etat(true), extra));
+    return json(Object.assign(etat(true), extra, { role: qui }));
   } catch (err) {
     console.error(err);
     return json({ error: err && err.pourLaPage ? err.message : "Erreur, réessaie" });
@@ -108,11 +114,17 @@ function doPost(e) {
 
 /* ---------- accès ---------- */
 
-function refuse(k) {
+// "appel" (peut tout faire), "groupe" (voir et noter) ou null si la page est fermée ou la clé fausse
+function role(k) {
   const props = PropertiesService.getScriptProperties();
-  if (props.getProperty("FERME") === "oui") return "Page fermée";
-  const cle = props.getProperty("CLE");
-  return cle && typeof k === "string" && k === cle ? null : "Lien invalide";
+  if (props.getProperty("FERME") === "oui" || typeof k !== "string" || !k) return null;
+  if (k === props.getProperty(CLE_APPEL)) return "appel";
+  if (k === props.getProperty(CLE_GROUPE)) return "groupe";
+  return null;
+}
+
+function refus() {
+  return PropertiesService.getScriptProperties().getProperty("FERME") === "oui" ? "Page fermée" : "Lien invalide";
 }
 
 function limiter(par) {
@@ -126,18 +138,30 @@ function limiter(par) {
 }
 
 function creerLienDePartage() {
-  const props = PropertiesService.getScriptProperties();
-  let cle = props.getProperty("CLE");
-  if (!cle) {
-    cle = Utilities.getUuid().replace(/-/g, "");
-    props.setProperty("CLE", cle);
-  }
-  console.log("Lien à partager : " + PAGE + "#k=" + cle);
+  console.log("Lien des appelants, peut tout faire : " + PAGE + "#k=" + cle(CLE_APPEL));
+  console.log("Lien du groupe, voir et noter : " + PAGE + "#k=" + cle(CLE_GROUPE));
+}
+
+function changerLienDuGroupe() {
+  PropertiesService.getScriptProperties().deleteProperty(CLE_GROUPE);
+  creerLienDePartage();
 }
 
 function changerLienDePartage() {
-  PropertiesService.getScriptProperties().deleteProperty("CLE");
+  const props = PropertiesService.getScriptProperties();
+  props.deleteProperty(CLE_APPEL);
+  props.deleteProperty(CLE_GROUPE);
   creerLienDePartage();
+}
+
+function cle(nom) {
+  const props = PropertiesService.getScriptProperties();
+  let valeur = props.getProperty(nom);
+  if (!valeur) {
+    valeur = Utilities.getUuid().replace(/-/g, "");
+    props.setProperty(nom, valeur);
+  }
+  return valeur;
 }
 
 function fermerLaPage() {

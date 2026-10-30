@@ -77,7 +77,10 @@ const telHref = t => {
   if (d.startsWith("00")) return "tel:+" + d.slice(2);
   return "tel:" + (d.startsWith("0") ? "+33" + d.slice(1) : d);
 };
-const safeUrl = u => /^https:\/\//i.test(u || "") || /^img\/[\w.-]+$/.test(u || "") ? u : null;
+const safeUrl = u => /^https:\/\//i.test(u || "") || /^img\/(t\/)?[\w.-]+$/.test(u || "") ? u : null;
+// les photos du site ont une miniature légère dans img/t/ pour la liste
+const thumbUrl = u => /^img\/[\w.-]+$/.test(u || "") ? u.replace(/^img\//, "img/t/") : u;
+const canEdit = () => data.role !== "groupe";
 const phones = l => String(l.tel || "").split("/").map(t => t.trim()).filter(Boolean);
 const shortBeds = l => String(l.couchages || "").replace(/\s*\(.*?\)/g, "").trim();
 const toneOf = pp => pp <= 150 ? "green" : pp <= 200 ? "orange" : "red";
@@ -171,7 +174,7 @@ function acceptName(n) {
   $("who").close();
   renderWho();
   refresh();
-  if (changed) sayHello();
+  if (changed) sayHello(true);
   const next = afterName;
   afterName = null;
   if (next) next(n);
@@ -181,8 +184,13 @@ function renderWho() {
   $("who-btn").replaceChildren(n ? n[0].toUpperCase() : icon(ICON.person, 18));
   $("who-btn").setAttribute("aria-label", n ? `Tu es ${n}. Changer de prénom` : "Dire qui tu es");
 }
-// note la visite (première et dernière) dans l'onglet Personnes
-function sayHello() { if (myName()) send({ action: "bonjour" }); }
+// note la visite dans l'onglet Personnes, au plus une fois toutes les 6 h par téléphone
+function sayHello(force) {
+  if (!myName()) return;
+  if (!force && Date.now() - (Number(store.get("bonjour")) || 0) < 6 * 36e5) return;
+  store.set("bonjour", String(Date.now()));
+  send({ action: "bonjour" });
+}
 
 /* ---------- lecture des lieux ---------- */
 const statutOf = l => (l.statut && l.statut !== "À appeler" ? l.statut : null);
@@ -211,7 +219,7 @@ const whoText = l => isMe(l.qui) ? "Toi" : l.qui;
 
 /* ---------- liste ---------- */
 function thumb(l) {
-  const src = safeUrl(l.photo);
+  const src = safeUrl(thumbUrl(l.photo));
   if (!src) return h("span", { class: "thumb none" }, icon(ICON.house, 22));
   const img = h("img", { class: "thumb", src, alt: "", loading: "lazy", decoding: "async", referrerpolicy: "no-referrer" });
   img.addEventListener("error", () => img.replaceWith(h("span", { class: "thumb none" }, icon(ICON.house, 22))));
@@ -238,7 +246,7 @@ function row(l) {
         foot ? h("span", { class: "row-foot" }, foot) : null),
       list.length ? h("span", { class: "row-avg", "aria-label": `Moyenne ${virgule(avg)} sur 5` }, icon(ICON.star, 13), virgule(avg)) : null,
       h("span", { class: "chev" }, icon(ICON.chevron, 16))),
-    tab === "call" && tels.length
+    canEdit() && tab === "call" && tels.length
       ? h("button", { class: "row-call" + (l.qui && !isMe(l.qui) ? " taken" : ""), type: "button", "aria-label": "Appeler " + l.nom, onclick: () => call(l, tels[0]) }, icon(ICON.phone, 20))
       : null);
 }
@@ -256,10 +264,16 @@ function renderList() {
   $("cap").textContent = `Budget max ${euros(200 * nb)}, soit 200 € chacun`;
   $("less").disabled = nb <= 10;
   $("more").disabled = nb >= 80;
+  $("stepper").hidden = !canEdit();
+  $("add-group").hidden = !canEdit();
+  $("sheet-group").hidden = !SHEET || !canEdit();
+  const counts = {};
+  data.lieux.forEach(l => { counts[bucket(l)] = (counts[bucket(l)] || 0) + 1; });
   $("tabs").replaceChildren(...TABS.map(t => h("button", {
     class: "seg-btn", type: "button", "aria-pressed": String(tab === t.key),
+    "aria-label": loaded ? `${t.label}, ${counts[t.key] || 0}` : null,
     onclick: () => { tab = t.key; renderList(); },
-  }, t.label)));
+  }, t.label, loaded ? h("span", { class: "seg-n" }, String(counts[t.key] || 0)) : null)));
   const shown = sorted(data.lieux.filter(l => bucket(l) === tab));
   const n = shown.length;
   $("count").textContent = loaded ? `${n} ${n > 1 ? "lieux" : "lieu"}` : "";
@@ -332,14 +346,14 @@ function hero(l) {
 
 function actions(l) {
   const tels = phones(l), href = safeUrl(l.lien);
-  const canCall = l.aAppeler !== "non" && tels.length;
+  const canCall = canEdit() && l.aAppeler !== "non" && tels.length;
   return h("div", { class: "actions" },
     canCall ? h("button", { class: "act primary", type: "button", onclick: () => call(l, tels[0]) }, icon(ICON.phone, 22), "Appeler") : null,
     href ? h("a", { class: "act" + (canCall ? "" : " primary"), href, target: "_blank", rel: "noopener noreferrer" }, icon(ICON.out, 22), host(href)) : null);
 }
 
 function busyNote(l) {
-  if (!l.qui || isMe(l.qui)) return null;
+  if (!canEdit() || !l.qui || isMe(l.qui)) return null;
   return h("p", { class: "busy" }, h("b", {}, l.qui), " s'en occupe" + (l.depuis ? " depuis " + ago(l.depuis).replace(/^il y a /, "") : "") + ". Vois avec ", l.qui, " avant d'appeler.");
 }
 
@@ -353,7 +367,18 @@ function resultPrompt(l) {
     h("button", { class: "text-btn", type: "button", onclick: () => { afterCall = null; renderPlace(); } }, "Plus tard"));
 }
 
+// le lien du groupe voit où en sont les appels sans pouvoir les changer
+function trackView(l) {
+  const com = String(l.commentaire || "").replace(/^'/, "");
+  return section("Suivi", [
+    cell("Où on en est", l.statut || "À appeler"),
+    l.qui ? cell("S'en occupe", whoText(l)) : null,
+    com ? h("div", { class: "cell" }, h("span", { class: "k wrap" }, com)) : null,
+  ], l.maj ? "Mis à jour " + ago(l.maj) + "." : null);
+}
+
 function trackSection(l) {
+  if (!canEdit()) return trackView(l);
   const sel = h("select", { class: "cell-select", "aria-label": "Où on en est" },
     STATUTS.map(s => h("option", { value: s, selected: (l.statut || "À appeler") === s }, s)));
   sel.addEventListener("change", () => withName(() => save(l, { statut: sel.value })));
@@ -386,7 +411,9 @@ function priceSection(l) {
   return section("Prix", [
     cell("Par personne", t ? h("span", { class: "strong " + toneOf(pp) }, euros(pp)) : "à demander"),
     cell("Affiché, 3 nuits", Number(l.prix) ? euros(Number(l.prix)) : "—"),
-    h("label", { class: "cell" }, h("span", { class: "k" }, "Obtenu au tél."), input),
+    canEdit()
+      ? h("label", { class: "cell" }, h("span", { class: "k" }, "Obtenu au tél."), input)
+      : cell("Obtenu au tél.", Number(l.prixNego) ? euros(Number(l.prixNego)) : "—"),
   ], footer);
 }
 
@@ -420,7 +447,7 @@ function copyButton(t) {
 
 function contactSection(l) {
   const tels = phones(l);
-  if (!tels.length && !l.email) return null;
+  if (!canEdit() || (!tels.length && !l.email)) return null;
   return section("Contact", [
     ...tels.map(t => h("div", { class: "cell" },
       h("button", { class: "cell-link", type: "button", onclick: () => call(l, t) }, icon(ICON.phone, 18), t), copyButton(t))),
@@ -448,7 +475,7 @@ function verifSection(l) {
 }
 
 function askSection(l) {
-  if (l.aAppeler === "non") return null;
+  if (!canEdit() || l.aAppeler === "non") return null;
   const own = typeof checkOf(l).demander === "string" ? checkOf(l).demander : "";
   const ask = q => h("div", { class: "cell" }, h("span", { class: "k wrap" }, q));
   return section("À demander", [own ? h("div", { class: "cell" }, h("span", { class: "k wrap" }, h("b", {}, "Pour ce lieu : "), own)) : null, ...ASK.map(ask)]);
@@ -470,7 +497,7 @@ function placeView(l) {
       l.infos ? h("p", { class: "place-info" }, l.infos) : null,
       busyNote(l),
       actions(l),
-      afterCall === l.id ? resultPrompt(l) : null,
+      canEdit() && afterCall === l.id ? resultPrompt(l) : null,
       trackSection(l),
       priceSection(l),
       rateSection(l),
@@ -478,9 +505,9 @@ function placeView(l) {
       verifSection(l),
       askSection(l),
       historySection(l),
-      h("div", { class: "group" }, st === "Abandonné"
+      canEdit() ? h("div", { class: "group" }, st === "Abandonné"
         ? h("button", { class: "row-btn tint", type: "button", onclick: () => save(l, { statut: "À appeler" }) }, "Remettre dans la liste")
-        : h("button", { class: "row-btn danger", type: "button", onclick: () => { save(l, { statut: "Abandonné" }); toast("Lieu écarté"); } }, "Écarter ce lieu"))));
+        : h("button", { class: "row-btn danger", type: "button", onclick: () => { save(l, { statut: "Abandonné" }); toast("Lieu écarté"); } }, "Écarter ce lieu")) : null));
 }
 
 function renderPlace() {
@@ -519,6 +546,7 @@ function send(req, optimistic) {
       reply = await db.post(req);
       // sinon une réponse plus ancienne écraserait un geste plus récent ; un +/− pas encore envoyé garde la main
       if (pending === 1) data = nbTimer ? { ...reply, nb: data.nb } : reply;
+      snapshot.save(reply);
     } catch (e) {
       // un refus du script a un message fait pour la page ; une panne de réseau, non
       failed = e.server ? e.message : true;
@@ -666,6 +694,7 @@ let locked = false;
 function lock(why) {
   locked = true;
   if (why !== "Page fermée") store.set("cle", "");
+  snapshot.clear();
   document.querySelectorAll("dialog[open]").forEach(d => d.close());
   $("lock-text").textContent = why === "Page fermée"
     ? "La page est fermée pour le moment."
@@ -680,7 +709,7 @@ async function load(force) {
   const seq = writes;
   try {
     let d = await db.get();
-    if (!d.lieux.length) {
+    if (!d.lieux.length && d.role !== "groupe") {
       const seed = await (await fetch("seed.json")).json();
       d = await db.post({ action: "seed", lieux: seed });
     }
@@ -689,6 +718,7 @@ async function load(force) {
     const same = loaded && JSON.stringify(d) === JSON.stringify(data);
     data = d;
     loaded = true;
+    snapshot.save(d);
     if (!same) refresh();
   } catch (e) {
     if (e.message === "Lien invalide" || e.message === "Page fermée") return lock(e.message);
@@ -702,7 +732,9 @@ async function start() {
   $("less").addEventListener("click", () => bumpNb(-1));
   $("more").addEventListener("click", () => bumpNb(1));
   setupSort();
-  if (SHEET) { $("sheet-link").href = SHEET; $("sheet-group").hidden = false; }
+  if (SHEET) $("sheet-link").href = SHEET;
+  const snap = snapshot.read();
+  if (snap) { data = snap; loaded = true; }
   $("mode").textContent = API ? "" : "Mode essai : ce que tu notes reste sur ce téléphone tant que le Drive n'est pas branché.";
   setupWho();
   setupAdd();
