@@ -710,6 +710,7 @@ async function start() {
   renderWho();
   tick();
   setInterval(tick, 60000);
+  sky($("sky"));
   renderList();
   fetch("verif.json").then(r => r.ok ? r.json() : null).then(v => {
     if (v && v.lieux) { verif = { date: String(v.date || ""), lieux: v.lieux }; refresh(); }

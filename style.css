@@ -33,9 +33,12 @@ button:disabled{cursor:default;opacity:.35}
 
 /* ---------- page ---------- */
 .app{max-width:680px;margin:0 auto;padding:0 16px calc(24px + env(safe-area-inset-bottom))}
-.top{padding-top:calc(28px + env(safe-area-inset-top))}
+.top{position:relative;padding-top:calc(92px + env(safe-area-inset-top))}
+/* le ciel au-dessus du titre : des feux d'artifice tramés qui se fondent dans le fond de la page */
+.sky{position:absolute;top:0;left:-16px;width:calc(100% + 32px);height:calc(96px + env(safe-area-inset-top));image-rendering:pixelated;pointer-events:none;
+  -webkit-mask-image:linear-gradient(#000 55%,transparent);mask-image:linear-gradient(#000 55%,transparent)}
 .title-row{display:flex;align-items:center;gap:12px}
-.title-row .avatar{margin-left:auto}
+.title-row .avatar{margin-left:auto;background:#dcdce1}
 h1{margin:0;font-family:var(--display);font-size:34px;line-height:41px;font-weight:700;letter-spacing:-.01em}
 .subtitle{margin:4px 0 0;font-size:15px;color:var(--label2)}
 .avatar{flex:none;width:36px;height:36px;border-radius:50%;border:0;background:var(--fill2);display:grid;place-items:center;font-size:17px;font-weight:600}
