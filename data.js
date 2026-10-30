@@ -18,13 +18,14 @@ const sameName = (a, b) => String(a || "").trim().toLowerCase() === String(b || 
 const isMe = n => !!n && sameName(n, myName());
 
 // La clé arrive dans le lien de partage (#k=…), jamais envoyée au serveur de la page.
-// On la garde sur le téléphone et on l'enlève de la barre d'adresse.
+// On la garde sur le téléphone et elle reste dans la barre d'adresse : « Ouvrir dans le navigateur »
+// depuis Instagram ou WhatsApp ne transmet que l'adresse affichée.
 const KEY = (() => {
   const m = location.hash.match(/k=([\w-]{8,64})/);
-  if (!m) return store.get("cle") || "";
-  store.set("cle", m[1]);
-  history.replaceState(null, "", location.pathname + location.search);
-  return m[1];
+  const key = m ? m[1] : store.get("cle") || "";
+  if (m) store.set("cle", key);
+  else if (key) history.replaceState(null, "", location.pathname + location.search + "#k=" + key);
+  return key;
 })();
 
 // Dernière liste reçue, gardée sur le téléphone : la page s'affiche tout de suite, la Sheet confirme ensuite.
