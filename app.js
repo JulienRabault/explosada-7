@@ -474,8 +474,25 @@ const VERDICT = { "ok": ["green", "Colle à ce qu'on cherche"], "à vérifier": 
 // ce que la vérification a trouvé de bloquant, en une étiquette sur la ligne
 function checkTag(l) {
   const v = checkOf(l);
-  if (v.dispo === "indispo") return [h("span", { class: "pill red" }, "Pris selon l'annonce")];
-  return v.verdict === "problème" ? [h("span", { class: "pill red" }, "À revoir")] : null;
+  const tags = [capacityTag(l),
+    v.dispo === "indispo" ? h("span", { class: "pill red" }, "Pris selon l'annonce")
+    : v.verdict === "problème" ? h("span", { class: "pill red" }, "À revoir") : null].filter(Boolean);
+  return tags.length ? tags : null;
+}
+
+// Places annoncées, lues dans « Couchages » hors parenthèses. Rien quand l'annonce compte des lits :
+// un lit double couche deux personnes, on ne peut pas en déduire le nombre de places.
+function places(l) {
+  const t = String(l.couchages || "").replace(/\(.*?\)/g, "");
+  if (/\blits?\b/i.test(t)) return null;
+  const n = (t.match(/\d+(?!\s*ch)/g) || []).map(Number);
+  return n.length ? Math.max(...n) : null;
+}
+// trop petit pour le groupe : orange s'il manque quelques places, rouge au-delà de 20 %
+function capacityTag(l) {
+  const p = places(l);
+  if (!p || p >= data.nb) return null;
+  return h("span", { class: "pill " + (p >= data.nb * 0.8 ? "orange" : "red") }, `${p} places pour ${data.nb}`);
 }
 
 function verifSection(l) {
@@ -507,6 +524,7 @@ function placeView(l) {
     h("div", { class: "sheet-body" },
       h("h2", { class: "place-title" }, l.nom),
       sub ? h("p", { class: "place-sub" }, sub) : null,
+      capacityTag(l) ? h("p", { class: "place-sub" }, capacityTag(l)) : null,
       l.infos ? h("p", { class: "place-info" }, l.infos) : null,
       busyNote(l),
       actions(l),
