@@ -135,8 +135,8 @@ function summary(l, isTop) {
     h("h2", { class: "card-title" }, l.nom),
     h("p", { class: "card-meta" },
       pricePill(l),
-      beds ? h("span", {}, beds) : null,
-      capacityTag(l)),
+      tooSmall(l) ? h("span", { class: "card-small", title: `Moins de places que le groupe (${data.nb})` }, `⚠︎ ${places(l)} places`)
+        : beds ? h("span", {}, beds) : null),
     l.infos || l.fete ? h("p", { class: "card-info" }, l.infos || l.fete) : null,
     mine ? h("p", { class: "card-mine" }, mine === LIKE ? "Tu as adoré" : mine === NOPE ? "Tu as dit bof" : `Ta note : ${mine} sur 5`) : null,
     isTop ? h("button", { class: "card-unfold", type: "button", "aria-label": "Tout voir sur " + l.nom, onclick: () => fold(true) }, icon(SWIPE_ICON.info, 22)) : null);
@@ -151,7 +151,6 @@ function detail(l) {
     h("h2", { class: "detail-title" }, l.nom),
     h("p", { class: "card-meta" },
       pricePill(l),
-      capacityTag(l),
       href ? h("a", { class: "detail-chip", href, target: "_blank", rel: "noopener noreferrer", "aria-label": "Voir l'annonce sur " + host(href) }, host(href), icon(ICON.out, 13)) : null),
     l.infos ? h("p", { class: "detail-p" }, l.infos) : null,
     h("div", { class: "dl" },

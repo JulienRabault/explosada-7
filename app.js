@@ -474,7 +474,7 @@ const VERDICT = { "ok": ["green", "Colle à ce qu'on cherche"], "à vérifier": 
 // ce que la vérification a trouvé de bloquant, en une étiquette sur la ligne
 function checkTag(l) {
   const v = checkOf(l);
-  const tags = [capacityTag(l),
+  const tags = [
     v.dispo === "indispo" ? h("span", { class: "pill red" }, "Pris selon l'annonce")
     : v.verdict === "problème" ? h("span", { class: "pill red" }, "À revoir") : null].filter(Boolean);
   return tags.length ? tags : null;
@@ -488,12 +488,7 @@ function places(l) {
   const n = (t.match(/\d+(?!\s*ch)/g) || []).map(Number);
   return n.length ? Math.max(...n) : null;
 }
-// trop petit pour le groupe : orange s'il manque quelques places, rouge au-delà de 20 %
-function capacityTag(l) {
-  const p = places(l);
-  if (!p || p >= data.nb) return null;
-  return h("span", { class: "pill " + (p >= data.nb * 0.8 ? "orange" : "red") }, `${p} places pour ${data.nb}`);
-}
+const tooSmall = l => { const p = places(l); return !!p && p < data.nb; };
 
 function verifSection(l) {
   const v = checkOf(l), [tone, label] = Object.prototype.hasOwnProperty.call(VERDICT, v.verdict) ? VERDICT[v.verdict] : [];
@@ -524,7 +519,6 @@ function placeView(l) {
     h("div", { class: "sheet-body" },
       h("h2", { class: "place-title" }, l.nom),
       sub ? h("p", { class: "place-sub" }, sub) : null,
-      capacityTag(l) ? h("p", { class: "place-sub" }, capacityTag(l)) : null,
       l.infos ? h("p", { class: "place-info" }, l.infos) : null,
       busyNote(l),
       actions(l),
