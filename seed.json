@@ -530,5 +530,47 @@
 "aAppeler": "oui",
 "prio": 1,
 "infos": "Tarif à la chambre, privatisation non écrite."
+},
+{
+"id": "v39",
+"nom": "Domaine de Massoulac",
+"prix": "",
+"couchages": "36 pers. (6 gîtes de 4 à 6)",
+"fete": "bar-salon 70 m² + salle de réception 237 m² (en option)",
+"tel": "06 23 86 52 03",
+"email": "",
+"lien": "https://www.grandsgites.com/gite-82-domaine-massoulac-2596.htm",
+"photo": "img/v39.jpg",
+"aAppeler": "oui",
+"prio": 3,
+"infos": "1 h de Toulouse (Molières, 82), 6 gîtes autour d'une piscine, ouvert toute l'année. Privatisation sur devis."
+},
+{
+"id": "v40",
+"nom": "Domaine Saladry",
+"prix": "",
+"couchages": "38 pers. (30 + 8 en mobile-homes)",
+"fete": "salle de 100 m² équipée : enceintes, jeux de lumière",
+"tel": "06 86 31 19 11",
+"email": "",
+"lien": "https://www.grandsgites.com/gite-11-domaine-saladry-7189.htm",
+"photo": "img/v40.jpg",
+"aAppeler": "oui",
+"prio": 3,
+"infos": "50 min de Toulouse, près de Castelnaudary. 3 700 à 6 000 € les 2 nuits à 40 avec la salle (+400 € de ménage)."
+},
+{
+"id": "v41",
+"nom": "Domaine d'Arignac",
+"prix": "",
+"couchages": "40 pers. (gîte + 4 chalets)",
+"fete": "salle de 60 m² pour 60 personnes",
+"tel": "06 33 81 49 62",
+"email": "",
+"lien": "https://www.grandsgites.com/gite-09-domaine-arignac-5403.htm",
+"photo": "img/v41.jpg",
+"aAppeler": "oui",
+"prio": 3,
+"infos": "1 h 15 de Toulouse (Ariège), privatisable, ouvert toute l'année, linge et ménage compris. Prix sur devis."
 }
 ]
