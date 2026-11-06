@@ -291,7 +291,6 @@ function renderList() {
   renderSort();
   $("list").replaceChildren(...(n ? shown.map(row) : [h("li", { class: "empty" }, loaded ? "Rien ici pour l'instant." : "Chargement des lieux…")]));
   renderSwipeEntry();
-  renderImport();
   const recent = visibleLog(data.journal).slice(-6).reverse();
   $("activity").hidden = !recent.length;
   $("activity-list").replaceChildren(...recent.map(e => logLine(e, true)));
@@ -705,27 +704,22 @@ function bumpNb(delta) {
 }
 
 /* ---------- lieux préparés dans seed.json mais absents de la Sheet ---------- */
-// Un appelant les ajoute d'un tap ; enrichLieu (data.js) leur rend ensuite photos, fiche et priorité.
+// La page d'un appelant les ajoute d'elle-même à l'ouverture ; enrichLieu (data.js) leur rend
+// ensuite photos, fiche et priorité. Une tentative par heure au plus, pour ne pas insister si ça échoue.
 let fresh = false, importing = false;
-const missingSeed = () => fresh && !importing && API && canEdit() ? SEED.filter(s => !data.lieux.some(l => l.ref === s.id)) : [];
-function renderImport() {
+const missingSeed = () => fresh && !importing && API && canEdit() && myName() ? SEED.filter(s => !data.lieux.some(l => l.ref === s.id)) : [];
+async function importSeed() {
   const list = missingSeed();
-  $("import-group").hidden = !list.length;
-  if (list.length) $("import").textContent = `Ajouter ${list.length > 1 ? `les ${list.length} nouveaux lieux` : "le nouveau lieu"} : ${list.map(s => s.nom.split(" (")[0]).join(", ")}`;
-}
-function setupImport() {
-  $("import").addEventListener("click", () => withName(async () => {
-    const list = missingSeed();
-    importing = true;
-    renderImport();
-    for (const s of list) {
-      await send({ action: "ajout", nom: s.nom, lien: s.lien, photo: s.photo, prix: s.prix || "",
-        couchages: s.couchages, tel: s.tel || "", aAppeler: s.aAppeler !== "non" });
-    }
-    importing = false;
-    toast(list.length > 1 ? `${list.length} lieux ajoutés` : "Lieu ajouté");
-    refresh();
-  }));
+  if (!list.length || Date.now() - (Number(store.get("import")) || 0) < 36e5) return;
+  store.set("import", String(Date.now()));
+  importing = true;
+  for (const s of list) {
+    await send({ action: "ajout", nom: s.nom, lien: s.lien, photo: s.photo, prix: s.prix || "",
+      couchages: s.couchages, tel: s.tel || "", aAppeler: s.aAppeler !== "non" });
+  }
+  importing = false;
+  toast(list.length > 1 ? `${list.length} nouveaux lieux ajoutés` : "Nouveau lieu ajouté");
+  refresh();
 }
 
 /* ---------- ajout d'un lieu ---------- */
@@ -808,6 +802,7 @@ async function load(force) {
     loaded = true;
     fresh = true;
     snapshot.save(d);
+    importSeed();
     // sans ça, un homonyme arrivé plus tard ne serait pas prévenu que le prénom est pris
     if (myName() && !d.personnes.some(isMe)) sayHello(true);
     if (!same) refresh();
@@ -832,7 +827,6 @@ async function start() {
   setupAdd();
   setupSheets();
   setupSwipe();
-  setupImport();
   renderWho();
   tick();
   setInterval(tick, 60000);
