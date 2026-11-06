@@ -37,7 +37,7 @@ const snapshot = {
   read() {
     try {
       const s = JSON.parse(store.get("etat"));
-      return s && s.k === KEY ? { ...VIDE(), ...s.d } : null;
+      return s && s.k === KEY ? enrich({ ...VIDE(), ...s.d }) : null;
     } catch (e) { return null; }
   },
   save(d) { store.set("etat", JSON.stringify({ k: KEY, d })); },
@@ -70,10 +70,21 @@ function refus(msg) {
   e.server = true;
   return e;
 }
+// Lieux préparés dans seed.json : ceux ajoutés depuis la page reçoivent un id « u… » de la Sheet.
+// On les reconnaît à leur lien d'annonce pour leur rendre photos, fiche, priorité et infos.
+let SEED = [];
+function enrichLieu(l) {
+  const m = SEED.find(s => s.id === l.id || (s.lien && s.lien === l.lien));
+  if (!m) return l;
+  return { ...l, ref: m.id, prio: Math.max(Number(l.prio) || 0, Number(m.prio) || 0),
+    infos: l.infos || m.infos || "", fete: l.fete || m.fete || "", couchages: l.couchages || m.couchages || "" };
+}
+const enrich = d => ({ ...d, lieux: (d.lieux || []).map(enrichLieu) });
+
 function check(res) {
   if (res && res.error) throw refus(res.error);
   if (!res) throw new Error("Réponse vide");
-  return { ...VIDE(), ...res };
+  return enrich({ ...VIDE(), ...res });
 }
 
 const remote = {

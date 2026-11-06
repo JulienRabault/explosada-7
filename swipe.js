@@ -15,7 +15,7 @@ const SWIPE_ICON = {
 // done : lieux déjà vus avant d'ouvrir la pile, pour que le compteur reprenne où on en était
 const deck = { ids: [], i: 0, done: 0, history: [], busy: false, open: false, photo: 0 };
 let gallery = {}; // photos.json : plusieurs photos par lieu, la première en grand
-const photosOf = l => ((gallery[l.id] || []).length ? gallery[l.id] : [l.photo]).map(safeUrl).filter(Boolean);
+const photosOf = l => ((gallery[l.ref || l.id] || []).length ? gallery[l.ref || l.id] : [l.photo]).map(safeUrl).filter(Boolean);
 
 const swipeable = l => statutOf(l) !== "Abandonné";
 const myNote = id => (data.avis.find(a => a.id === id && isMe(a.prenom)) || {}).note || 0;
