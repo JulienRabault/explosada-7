@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'none'; base-uri 'none'; form-action 'none'; object-src 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
+<meta name="theme-color" media="(prefers-color-scheme: light)" content="#f6f2ea">
+<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#15120f">
+<meta name="color-scheme" content="light dark">
+<title>Budget Explosada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=1">
+</head>
+<body>
+<main class="wrap">
+  <header>
+    <p class="eyebrow">Explosada 7.0 · réveillon</p>
+    <h1>Budget</h1>
+    <p class="lede">Tape les prix dans les gros champs. À côté, ce que ça fait par personne si on reste 2 nuits ou 3 nuits. Les chiffres de départ sont des exemples.</p>
+  </header>
+
+  <div class="grid">
+    <form class="form" id="form" autocomplete="off">
+      <section class="sec">
+        <h2>On est combien</h2>
+        <div class="card people">
+          <button type="button" class="ic" data-step="-1" aria-label="Une personne de moins">−</button>
+          <div class="box"><input id="n" inputmode="numeric" aria-label="Nombre de personnes"><span class="suf">pers.</span></div>
+          <button type="button" class="ic" data-step="1" aria-label="Une personne de plus">+</button>
+        </div>
+      </section>
+
+      <section class="sec">
+        <h2>Logement</h2>
+        <div class="card tiles">
+          <div class="tile">
+            <label for="log2">Prix pour 2 nuits <small>· arrivée le 31</small></label>
+            <div class="box"><input id="log2" inputmode="decimal" placeholder="0"><span class="suf">€</span></div>
+            <div class="res" id="res2"></div>
+          </div>
+          <div class="tile">
+            <label for="log3">Prix pour 3 nuits <small>· arrivée le 30</small></label>
+            <div class="box"><input id="log3" inputmode="decimal" placeholder="0"><span class="suf">€</span></div>
+            <div class="res" id="res3"></div>
+          </div>
+          <div class="tile">
+            <label for="plafond">Plafond logement <small>· par personne</small></label>
+            <div class="box"><input id="plafond" inputmode="decimal"><span class="suf">€ / pers.</span></div>
+            <div class="res" id="resmax"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="sec">
+        <h2>Le reste</h2>
+        <div class="items" id="items"></div>
+      </section>
+
+      <button type="button" class="add" id="add"><span aria-hidden="true">+</span> Ajouter une dépense</button>
+
+      <section class="sec">
+        <h2>Marge pour les imprévus</h2>
+        <div class="card marge">
+          <p>Ajoutée sur tout sauf le logement, dont le prix est connu.</p>
+          <div class="seg" id="marge" role="group" aria-label="Marge"></div>
+        </div>
+      </section>
+    </form>
+
+    <aside class="out" id="detail" aria-live="polite">
+      <div class="duo" id="duo"></div>
+      <div class="panel">
+        <p class="k">Par personne, selon le nombre</p>
+        <table class="cmp" id="cmp"></table>
+      </div>
+      <div class="acts">
+        <button type="button" class="btn primary" id="copy">Copier le récap</button>
+        <button type="button" class="btn" id="reset">Remettre les exemples</button>
+      </div>
+      <textarea class="fallback" id="fallback" readonly hidden aria-label="Récap à copier"></textarea>
+    </aside>
+  </div>
+</main>
+
+<div class="dock" aria-hidden="true">
+  <div><div class="dk">2 nuits</div><div class="dv" id="dock2"></div></div>
+  <div><div class="dk">3 nuits</div><div class="dv" id="dock3"></div></div>
+  <a href="#detail">Détail</a>
+</div>
+<script src="app.js?v=1"></script>
+</body>
+</html>
