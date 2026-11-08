@@ -12,6 +12,7 @@
  * - changerLienDuGroupe() : si le lien du groupe a fuité, l'ancien cesse de marcher.
  * - changerLienDePartage() : change les deux liens.
  * - fermerLaPage() / rouvrirLaPage() : coupe tout d'un coup, sans rien effacer.
+ * Inscriptions : la page inscription.html remplit l'onglet Inscriptions (une ligne par personne).
  */
 
 const PAGE = "https://julienrabault.github.io/explosada-7/";
@@ -29,6 +30,7 @@ const AVIS = "Avis";
 const JOURNAL = "Journal";
 const PERSONNES = "Personnes";
 const REGLAGES = "Réglages";
+const INSCRIPTIONS = "Inscriptions";
 
 const COLS = [
   ["id", "ID"],
@@ -55,13 +57,16 @@ const ENTETES = {
   [JOURNAL]: ["Date", "Prénom", "ID", "Lieu", "Action"],
   [PERSONNES]: ["Prénom", "Première visite", "Dernière visite"],
   [REGLAGES]: ["Réglage", "Valeur"],
+  [INSCRIPTIONS]: ["Reçue le", "Prénom", "Nom", "Insta", "Nuits", "Engagement", "Modifiée le"],
 };
 const STATUTS = ["À appeler", "Pas de réponse", "Dispo", "Option posée", "Réservé", "Abandonné"];
 const PRENOM = /^[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ' .-]{0,29}$/;
 const ID = /^[\w-]{1,24}$/;
 const CLE_APPEL = "CLE";
 const CLE_GROUPE = "CLE_GROUPE";
-const GROUPE_PEUT = ["avis", "bonjour"];
+const GROUPE_PEUT = ["avis", "bonjour", "inscription"];
+const NUITS = ["31 → 1er", "1er → 2", "2 → 3"];
+const MAX_INSCRITS = 80;
 
 /* ---------- entrées ---------- */
 
@@ -102,7 +107,7 @@ function doPost(e) {
     // noter une visite n'est pas urgent : si la Sheet est occupée, on laisse tomber sans faire attendre
     if (req.action === "bonjour" && !lock.tryLock(2000)) return json(Object.assign(etat(false), { role: qui }));
     lock.waitLock(15000);
-    const actions = { maj: majLieu, prendre: prendre, appel: appel, ajout: ajoutLieu, avis: donnerAvis, nb: changerNb, bonjour: bonjour, seed: seed };
+    const actions = { maj: majLieu, prendre: prendre, appel: appel, ajout: ajoutLieu, avis: donnerAvis, nb: changerNb, bonjour: bonjour, seed: seed, inscription: inscrire };
     if (!Object.prototype.hasOwnProperty.call(actions, req.action)) throw oups("Action inconnue");
     const extra = actions[req.action](req, par) || {};
     return json(Object.assign(etat(true), extra, { role: qui }));
@@ -186,7 +191,8 @@ function etat(garder) {
   const journal = lignes(feuille(JOURNAL)).slice(-JOURNAL_ENVOYE)
     .map(r => ({ t: r[0] instanceof Date ? r[0].getTime() : 0, par: sansApostrophe(r[1]), id: String(r[2]), quoi: sansApostrophe(r[4]) }));
   const personnes = lignes(feuille(PERSONNES)).filter(r => r[0]).map(r => sansApostrophe(r[0]));
-  const o = { lieux, avis, journal, personnes, nb: nbPersonnes() };
+  const inscrits = lignes(feuille(INSCRIPTIONS)).filter(r => r[1]).map(r => ({ prenom: sansApostrophe(r[1]), nom: sansApostrophe(r[2]) }));
+  const o = { lieux, avis, journal, personnes, nb: nbPersonnes(), inscrits };
   if (!garder) return o;
   try {
     cacheEcrire(JSON.stringify(o));
@@ -352,6 +358,25 @@ function donnerAvis(req, par) {
   noter(par, id, noms[id], note ? "note " + note + "/5" : "retire sa note");
 }
 
+// S'inscrire pour venir : une ligne par personne (prénom + nom) ; se réinscrire met la ligne à jour.
+function inscrire(req, par) {
+  const nom = texte(req.nom, 40);
+  const insta = texte(String(req.insta == null ? "" : req.insta).replace(/^@+/, ""), 40);
+  const nuits = (Array.isArray(req.nuits) ? req.nuits : []).filter(n => NUITS.includes(n));
+  if (!nom) throw oups("Il manque ton nom");
+  if (!nuits.length) throw oups("Choisis au moins une nuit");
+  if (req.engage !== true) throw oups("Coche l'engagement pour t'inscrire");
+  const sh = feuille(INSCRIPTIONS);
+  const data = lignes(sh);
+  const i = data.findIndex(r => memePrenom(r[1], par) && memePrenom(r[2], nom));
+  if (i < 0 && data.length >= MAX_INSCRITS) throw oups("Liste pleine");
+  const maintenant = new Date();
+  const ligne = [i >= 0 ? data[i][0] : maintenant, par, nom, insta, nuits.join(", "), "oui", maintenant];
+  if (i >= 0) sh.getRange(i + 2, 1, 1, ligne.length).setValues([ligne]);
+  else sh.appendRow(ligne);
+  noter(par, "", "", i >= 0 ? "modifie son inscription" : "s'inscrit");
+}
+
 function changerNb(req, par) {
   const n = Math.round(Number(req.nb));
   if (!(n >= 10 && n <= 80)) throw oups("Entre 10 et 80 personnes");
@@ -410,7 +435,7 @@ function feuille(nom) {
     ["maj", "depuis"].forEach(k => sh.getRange(1, colonne(k), 1000, 1).setNumberFormat("dd/mm/yyyy hh:mm"));
     sh.appendRow(COLS.map(c => c[1]));
   } else {
-    const dates = { [AVIS]: [4], [JOURNAL]: [1], [PERSONNES]: [2, 3] }[nom] || [];
+    const dates = { [AVIS]: [4], [JOURNAL]: [1], [PERSONNES]: [2, 3], [INSCRIPTIONS]: [1, 7] }[nom] || [];
     dates.forEach(c => sh.getRange(1, c, 6000, 1).setNumberFormat("dd/mm/yyyy hh:mm"));
     if (nom === AVIS) sh.getRange(1, 3, 6000, 1).setNumberFormat("0");
     sh.appendRow(ENTETES[nom]);

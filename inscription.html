@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
+<title>Explosada 7.0 · Inscription</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' https: data:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; base-uri 'none'; form-action 'self'; object-src 'none'">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#f2f2f7">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='6' fill='%23f59e0b'/%3E%3Cpath d='M5.5 11.5 12 6l6.5 5.5V18h-4v-4.5h-5V18h-4z' fill='none' stroke='%23fff' stroke-width='2' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=202611081120">
+</head>
+<body>
+<section class="lock" id="lock" hidden>
+  <h1>Explosada 7.0</h1>
+  <p id="lock-text">Cette page s'ouvre avec le lien de partage. Rouvre le lien reçu dans le groupe.</p>
+</section>
+
+<main class="app" id="app">
+  <header class="top">
+    <h1>Explosada 7.0</h1>
+    <p class="subtitle">31 déc. → 3 janv. · <span id="count-top"></span></p>
+  </header>
+
+  <section class="ins-hero group">
+    <p class="ins-big">Tu viens ?</p>
+    <p class="ins-lead">On a voté pour la maison. Pour la réserver, il faut savoir qui vient vraiment : inscris-toi ici, ça prend 30 secondes.</p>
+    <ul class="ins-facts">
+      <li><b>Logement</b><span id="price"></span></li>
+      <li><b>Avant le</b><span id="deadline"></span></li>
+      <li><b>Ensuite</b><span>tu passes dans la conv d'orga, où on te demandera ta part.</span></li>
+    </ul>
+  </section>
+
+  <form id="form" novalidate>
+    <h2 class="sec-h ins-sec">Toi</h2>
+    <div class="group">
+      <label class="field"><span>Prénom</span><input name="prenom" maxlength="30" autocomplete="given-name" autocapitalize="words" placeholder="Tom"></label>
+      <label class="field"><span>Nom</span><input name="nom" maxlength="40" autocomplete="family-name" autocapitalize="words" placeholder="Martin"></label>
+      <label class="field"><span>Insta</span><input name="insta" maxlength="40" autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="@pseudo, pour la conv d'orga"></label>
+    </div>
+
+    <h2 class="sec-h ins-sec">Les nuits où tu dors là</h2>
+    <div class="group" id="nights"></div>
+
+    <h2 class="sec-h ins-sec">Ton engagement</h2>
+    <label class="group ins-engage">
+      <input type="checkbox" name="engage">
+      <span id="engage-text"></span>
+    </label>
+
+    <p class="msg" id="msg" role="alert"></p>
+    <button type="submit" class="deck-cta ins-submit" id="submit">Je viens !</button>
+    <p class="sec-f ins-foot">Tu ramènes un pote qui n'est pas dans la conv ? Envoie-lui ce lien : chacun remplit le sien.</p>
+  </form>
+
+  <section class="ins-done group" id="done" hidden>
+    <p class="ins-big">C'est noté 🎆</p>
+    <p class="ins-lead" id="done-text"></p>
+    <button type="button" class="text-btn" id="edit">Modifier mon inscription</button>
+  </section>
+
+  <p class="list-foot"><a id="back" class="ins-back">← Retour aux lieux</a></p>
+</main>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<script src="config.js?v=202611081120"></script>
+<script src="data.js?v=202611081120"></script>
+<script src="inscription.js?v=202611081120"></script>
+</body>
+</html>

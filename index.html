@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=202611062150">
+<link rel="stylesheet" href="style.css?v=202611081120">
 </head>
 <body>
 <section class="lock" id="lock" hidden>
@@ -42,6 +42,11 @@
       <button type="button" id="more" aria-label="Une personne de plus">+</button>
     </div>
   </section>
+
+  <a class="group swipe-entry ins-entry" id="ins-link" href="inscription.html" hidden>
+    <span class="swipe-ico" aria-hidden="true">✓</span>
+    <span class="swipe-text"><b id="ins-title">Je viens !</b><small id="ins-sub"></small></span>
+  </a>
 
   <button type="button" class="group swipe-entry" id="swipe-open" hidden>
     <span class="swipe-text"><b>Mode swipe</b><small id="swipe-sub"></small></span>
@@ -147,10 +152,10 @@
 </dialog>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
-<script src="config.js?v=202611062150"></script>
-<script src="data.js?v=202611062150"></script>
-<script src="sky.js?v=202611062150"></script>
-<script src="swipe.js?v=202611062150"></script>
-<script src="app.js?v=202611062150"></script>
+<script src="config.js?v=202611081120"></script>
+<script src="data.js?v=202611081120"></script>
+<script src="sky.js?v=202611081120"></script>
+<script src="swipe.js?v=202611081120"></script>
+<script src="app.js?v=202611081120"></script>
 </body>
 </html>

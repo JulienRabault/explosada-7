@@ -36,6 +36,12 @@ crayon > Version : Nouvelle version > Déployer. L'adresse `/exec` et la clé ne
 - La visite (`bonjour`) n'attend jamais : si la Sheet est occupée, elle n'est simplement pas notée.
 - Les fichiers du site portent un numéro de version (`?v=…`) : à changer à chaque mise en ligne.
 
+## Inscriptions
+
+`inscription.html` (carte « Je viens ! » en haut de la page) : prénom, nom, Insta, nuits et engagement
+à payer. Une ligne par personne dans l'onglet **Inscriptions**, créé tout seul ; se réinscrire met la
+ligne à jour. Le prix et la date limite affichés sont en tête de `inscription.js`.
+
 ## Ce que la Sheet garde
 
 - Lieux : statut, qui s'en occupe et depuis quand (`Pris le`).

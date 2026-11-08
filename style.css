@@ -357,3 +357,21 @@ dialog.deck[open]{display:flex;flex-direction:column;animation:fade .25s ease}
 .deck-done .text-btn{width:auto}
 .deck-cta{padding:13px 24px;border:0;border-radius:999px;background:var(--fire);color:var(--on-fire);font-size:17px;font-weight:600}
 @media (prefers-reduced-motion:reduce){dialog.deck[open],.card-detail{animation:none}.card.front,.card.back,.round,.card-unfold,.card-fold{transition:none}}
+
+/* ---------- inscription ---------- */
+.ins-hero,.ins-done{margin-top:20px;padding:18px 18px 16px}
+.ins-big{margin:0;font-family:var(--display);font-size:30px;line-height:34px;font-weight:800;letter-spacing:-.02em}
+.ins-lead{margin:8px 0 0;font-size:16px;line-height:22px;color:var(--label2)}
+.ins-facts{margin:14px 0 0;padding:0;list-style:none;display:grid;gap:8px;font-size:15px;line-height:20px}
+.ins-facts li{display:grid;grid-template-columns:78px 1fr;gap:8px}
+.ins-facts b{font-weight:600}
+.ins-sec{margin-top:26px}
+.ins-engage{display:flex;align-items:flex-start;gap:12px;padding:14px 16px;font-size:15px;line-height:21px;cursor:pointer}
+.ins-engage input{flex:none;width:22px;height:22px;margin:0;accent-color:var(--fire)}
+.ins-submit{display:block;width:100%;margin-top:20px}
+.ins-submit:disabled{opacity:.5}
+.ins-foot{text-align:center;padding-top:12px}
+.ins-done .text-btn{width:auto;padding-left:0}
+.ins-back{color:var(--tint);text-decoration:none;font-weight:500}
+.ins-entry{text-decoration:none}
+.ins-entry .swipe-ico{background:#34c759;color:#fff;font-size:20px}

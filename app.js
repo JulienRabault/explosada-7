@@ -291,6 +291,7 @@ function renderList() {
   renderSort();
   $("list").replaceChildren(...(n ? shown.map(row) : [h("li", { class: "empty" }, loaded ? "Rien ici pour l'instant." : "Chargement des lieux…")]));
   renderSwipeEntry();
+  renderInscription();
   const recent = visibleLog(data.journal).slice(-6).reverse();
   $("activity").hidden = !recent.length;
   $("activity-list").replaceChildren(...recent.map(e => logLine(e, true)));
@@ -701,6 +702,15 @@ function bumpNb(delta) {
     clearTimeout(nbTimer);
     nbTimer = setTimeout(() => { nbTimer = null; send({ action: "nb", nb }); }, 700);
   });
+}
+
+/* ---------- inscription : la carte « Je viens ! » mène à inscription.html ---------- */
+function renderInscription() {
+  const list = data.inscrits || [], n = list.length, me = list.some(i => isMe(i.prenom));
+  $("ins-link").hidden = !loaded;
+  $("ins-link").href = "inscription.html" + location.search;
+  $("ins-title").textContent = me ? "Tu es inscrit·e ✓" : "Je viens !";
+  $("ins-sub").textContent = me ? `${n} sur la liste · modifier` : n ? `${n} déjà inscrit${n > 1 ? "s" : ""}, à toi` : "Inscris-toi pour qu'on réserve la maison";
 }
 
 /* ---------- lieux préparés dans seed.json mais absents de la Sheet ---------- */

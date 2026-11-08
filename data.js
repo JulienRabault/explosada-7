@@ -6,7 +6,7 @@ const API = (window.API_URL || "").trim();
 const SHEET = (window.SHEET_URL || "").trim();
 const PRENOM = /^[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ' .-]{0,29}$/;
 // role : "appel" (peut tout faire) ou "groupe" (voir et noter), donné par la Sheet selon le lien
-const VIDE = () => ({ lieux: [], avis: [], journal: [], personnes: [], nb: 35, role: "appel" });
+const VIDE = () => ({ lieux: [], avis: [], journal: [], personnes: [], nb: 35, role: "appel", inscrits: [] });
 
 // préfixe : toutes les pages julienrabault.github.io partagent le même stockage
 const store = {
